@@ -1,144 +1,163 @@
-import streamlit as st
-from PIL import Image, ImageDraw
-import time
+import pygame
 import random
+import sys
 
-# Configuration de la page
-st.set_page_config(page_title="Jeu du Dinosaure IA", page_icon="🦖", layout="centered")
+# Initialisation de Pygame
+pygame.init()
 
-# Variables de jeu
-WIDTH = 600
-HEIGHT = 200
-GROUND_Y = 150
-DINO_SIZE = 20
-COACH_SIZE = 10
-OBSTACLE_WIDTH = 20
-OBSTACLE_HEIGHT = 40
-FPS = 30
+# Constantes de l'écran
+WIDTH, HEIGHT = 800, 400
+GROUND_Y = 300
+FPS = 60
 
-# Initialisation de l'état du jeu
-if 'game_over' not in st.session_state:
-    st.session_state.game_over = False
-if 'score' not in st.session_state:
-    st.session_state.score = 0
-if 'dino_y' not in st.session_state:
-    st.session_state.dino_y = GROUND_Y - DINO_SIZE
-if 'velocity' not in st.session_state:
-    st.session_state.velocity = 0
-if 'obstacles' not in st.session_state:
-    st.session_state.obstacles = []
-if 'jumping' not in st.session_state:
-    st.session_state.jumping = False
+# Couleurs
+WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+BLACK = (0, 0, 0)
 
-# Fonction pour gérer le saut
-def jump():
-    if not st.session_state.jumping and not st.session_state.game_over:
-        st.session_state.jumping = True
-        st.session_state.velocity = -10
+# Configuration de l'écran
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Jeu du Dinosaure IA")
+clock = pygame.time.Clock()
 
-# Fonction pour réinitialiser le jeu
-def reset_game():
-    st.session_state.game_over = False
-    st.session_state.score = 0
-    st.session_state.dino_y = GROUND_Y - DINO_SIZE
-    st.session_state.velocity = 0
-    st.session_state.obstacles = []
-    st.session_state.jumping = False
+# Police pour le texte
+font = pygame.font.SysFont(None, 36)
 
-# Détection des touches
-st.text("Appuyez sur la barre d'espace pour sauter.")
-if st.button("Sauter"):
-    jump()
-if st.button("Redémarrer") and st.session_state.game_over:
-    reset_game()
+# Classe pour le Dinosaure
+class Dinosaur:
+    def __init__(self):
+        self.size = 50
+        self.x = 50
+        self.y = GROUND_Y - self.size
+        self.velocity_y = 0
+        self.jump_force = 15
+        self.gravity = 1
+        self.is_jumping = False
 
-# Gestion des entrées clavier
-# Note: Streamlit ne supporte pas directement la détection des touches du clavier.
-# Une alternative serait d'utiliser un composant personnalisé ou des boutons pour les actions.
+    def jump(self):
+        if not self.is_jumping:
+            self.velocity_y = -self.jump_force
+            self.is_jumping = True
 
-# Boucle de jeu
-if not st.session_state.game_over:
-    placeholder = st.empty()
-    start_time = time.time()
-    last_time = start_time
-    while not st.session_state.game_over:
-        current_time = time.time()
-        delta = current_time - last_time
-        if delta < 1/FPS:
-            time.sleep(1/FPS - delta)
-            current_time = time.time()
-            delta = current_time - last_time
-        last_time = current_time
+    def update(self):
+        self.velocity_y += self.gravity
+        self.y += self.velocity_y
 
-        # Mise à jour du score
-        st.session_state.score += 1
+        if self.y >= GROUND_Y - self.size:
+            self.y = GROUND_Y - self.size
+            self.is_jumping = False
+            self.velocity_y = 0
 
-        # Mise à jour de la position du dinosaure
-        if st.session_state.jumping:
-            st.session_state.velocity += 1  # Gravité
-            st.session_state.dino_y += st.session_state.velocity
-            if st.session_state.dino_y >= GROUND_Y - DINO_SIZE:
-                st.session_state.dino_y = GROUND_Y - DINO_SIZE
-                st.session_state.jumping = False
-                st.session_state.velocity = 0
+    def draw(self, surface):
+        # Dessin du dinosaure bleu
+        pygame.draw.rect(surface, BLUE, (self.x, self.y, self.size, self.size))
+        # Dessin du coach volant "Inside"
+        coach_radius = 10
+        coach_x = self.x + self.size // 2
+        coach_y = self.y - 15
+        pygame.draw.circle(surface, BLUE, (coach_x, coach_y), coach_radius)
 
-        # Génération d'obstacles
-        if random.randint(1, 20) == 1:
-            obstacle_x = WIDTH
-            obstacle_label = random.choice(["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité"])
-            st.session_state.obstacles.append({"x": obstacle_x, "label": obstacle_label})
+# Classe pour les Obstacles
+class Obstacle:
+    def __init__(self):
+        self.width = 30
+        self.height = 50
+        self.x = WIDTH
+        self.y = GROUND_Y - self.height
+        self.speed = 6
+        self.labels = ["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité"]
+        self.label = random.choice(self.labels)
+        self.font = pygame.font.SysFont(None, 24)
+        self.label_surface = self.font.render(self.label, True, BLACK)
 
-        # Mise à jour des obstacles
-        for obstacle in st.session_state.obstacles:
-            obstacle["x"] -= 5  # Vitesse de déplacement des obstacles
+    def update(self):
+        self.x -= self.speed
 
-        # Suppression des obstacles hors de l'écran
-        st.session_state.obstacles = [ob for ob in st.session_state.obstacles if ob["x"] > -OBSTACLE_WIDTH]
+    def draw(self, surface):
+        pygame.draw.rect(surface, RED, (self.x, self.y, self.width, self.height))
+        # Centrer le texte sous l'obstacle
+        label_rect = self.label_surface.get_rect(center=(self.x + self.width // 2, self.y + self.height + 10))
+        surface.blit(self.label_surface, label_rect)
 
-        # Détection des collisions
-        for obstacle in st.session_state.obstacles:
-            if (0 < obstacle["x"] < DINO_SIZE) and (st.session_state.dino_y + DINO_SIZE > GROUND_Y - OBSTACLE_HEIGHT):
-                st.session_state.game_over = True
+    def off_screen(self):
+        return self.x < -self.width
 
-        # Création de l'image du jeu
-        img = Image.new("RGB", (WIDTH, HEIGHT), "white")
-        draw = ImageDraw.Draw(img)
+    def get_rect(self):
+        return pygame.Rect(self.x, self.y, self.width, self.height)
+
+# Fonction principale du jeu
+def main():
+    dinosaur = Dinosaur()
+    obstacles = []
+    spawn_timer = 0
+    spawn_interval = 90  # Nombre de frames entre les obstacles
+    score = 0
+    game_over = False
+
+    while True:
+        clock.tick(FPS)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and not game_over:
+                    dinosaur.jump()
+                if event.key == pygame.K_r and game_over:
+                    main()
+
+        if not game_over:
+            # Mise à jour du dinosaure
+            dinosaur.update()
+
+            # Gestion des obstacles
+            spawn_timer += 1
+            if spawn_timer >= spawn_interval:
+                obstacles.append(Obstacle())
+                spawn_timer = 0
+
+            for obstacle in obstacles:
+                obstacle.update()
+
+            # Suppression des obstacles hors de l'écran
+            obstacles = [ob for ob in obstacles if not ob.off_screen()]
+
+            # Détection des collisions
+            dino_rect = pygame.Rect(dinosaur.x, dinosaur.y, dinosaur.size, dinosaur.size)
+            for obstacle in obstacles:
+                if dino_rect.colliderect(obstacle.get_rect()):
+                    game_over = True
+
+            # Mise à jour du score
+            score += 1
+
+        # Dessin de l'écran
+        screen.fill(WHITE)
 
         # Dessin du sol
-        draw.line((0, GROUND_Y, WIDTH, GROUND_Y), fill="black", width=2)
+        pygame.draw.line(screen, BLACK, (0, GROUND_Y), (WIDTH, GROUND_Y), 2)
 
         # Dessin du dinosaure
-        draw.rectangle([0, st.session_state.dino_y, DINO_SIZE, st.session_state.dino_y + DINO_SIZE], fill="blue")
-
-        # Dessin du coach volant "Inside"
-        coach_x = DINO_SIZE // 2 - COACH_SIZE // 2
-        coach_y = st.session_state.dino_y - COACH_SIZE - 5
-        draw.ellipse([coach_x, coach_y, coach_x + COACH_SIZE, coach_y + COACH_SIZE], fill="blue")
+        dinosaur.draw(screen)
 
         # Dessin des obstacles
-        for obstacle in st.session_state.obstacles:
-            draw.rectangle([obstacle["x"], GROUND_Y - OBSTACLE_HEIGHT, obstacle["x"] + OBSTACLE_WIDTH, GROUND_Y], fill="red")
-            draw.text((obstacle["x"], GROUND_Y), obstacle["label"], fill="black")
+        for obstacle in obstacles:
+            obstacle.draw(screen)
 
-        # Dessin du score
-        draw.text((WIDTH - 100, 10), f"Score: {st.session_state.score}", fill="black")
+        # Affichage du score
+        score_surface = font.render(f"Score: {score}", True, BLACK)
+        screen.blit(score_surface, (WIDTH - 150, 20))
 
-        # Affichage de l'image
-        placeholder.image(img, use_column_width=False)
+        if game_over:
+            # Affichage du Game Over
+            game_over_surface = font.render("Game Over", True, RED)
+            restart_surface = pygame.font.SysFont(None, 24).render("Appuyez sur 'R' pour redémarrer", True, BLACK)
+            screen.blit(game_over_surface, (WIDTH // 2 - game_over_surface.get_width() // 2, HEIGHT // 2 - 50))
+            screen.blit(restart_surface, (WIDTH // 2 - restart_surface.get_width() // 2, HEIGHT // 2))
 
-    # Affichage du Game Over et du bouton de redémarrage
-    st.markdown("<h1 style='color: red;'>Game Over</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h2>Score final: {st.session_state.score}</h2>", unsafe_allow_html=True)
-    if st.button("Redémarrer"):
-        reset_game()
-else:
-    # Affichage initial du jeu
-    img = Image.new("RGB", (WIDTH, HEIGHT), "white")
-    draw = ImageDraw.Draw(img)
-    draw.line((0, GROUND_Y, WIDTH, GROUND_Y), fill="black", width=2)
-    draw.rectangle([0, st.session_state.dino_y, DINO_SIZE, st.session_state.dino_y + DINO_SIZE], fill="blue")
-    coach_x = DINO_SIZE // 2 - COACH_SIZE // 2
-    coach_y = st.session_state.dino_y - COACH_SIZE - 5
-    draw.ellipse([coach_x, coach_y, coach_x + COACH_SIZE, coach_y + COACH_SIZE], fill="blue")
-    draw.text((WIDTH - 100, 10), f"Score: {st.session_state.score}", fill="black")
-    st.image(img, use_column_width=False)
+        pygame.display.flip()
+
+if __name__ == "__main__":
+    main()
