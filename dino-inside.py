@@ -1,151 +1,144 @@
 import streamlit as st
-import streamlit.components.v1 as components
+from PIL import Image, ImageDraw
+import time
+import random
 
-st.title("Jeu du Dinosaure avec Coach Inside")
+# Configuration de la page
+st.set_page_config(page_title="Jeu du Dinosaure IA", page_icon="🦖", layout="centered")
 
-# HTML et JavaScript intégrés avec p5.js pour une meilleure ressemblance avec le jeu Chrome
-html_code = """
-<!DOCTYPE html>
-<html>
-  <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-  </head>
-  <body>
-    <script>
-      let dino;
-      let obstacles = [];
-      let score = 0;
-      let obstacleWords = ["RGPD", "Hallucination", "Erreurs", "Biais"];
-      let coachDino;
-      let isGameOver = false;
+# Variables de jeu
+WIDTH = 600
+HEIGHT = 200
+GROUND_Y = 150
+DINO_SIZE = 20
+COACH_SIZE = 10
+OBSTACLE_WIDTH = 20
+OBSTACLE_HEIGHT = 40
+FPS = 30
 
-      function setup() {
-        createCanvas(800, 400);
-        dino = new Dino();
-        coachDino = new CoachDino();
-        obstacles.push(new Obstacle());
-        textSize(18);
-        textAlign(CENTER);
-      }
+# Initialisation de l'état du jeu
+if 'game_over' not in st.session_state:
+    st.session_state.game_over = False
+if 'score' not in st.session_state:
+    st.session_state.score = 0
+if 'dino_y' not in st.session_state:
+    st.session_state.dino_y = GROUND_Y - DINO_SIZE
+if 'velocity' not in st.session_state:
+    st.session_state.velocity = 0
+if 'obstacles' not in st.session_state:
+    st.session_state.obstacles = []
+if 'jumping' not in st.session_state:
+    st.session_state.jumping = False
 
-      function draw() {
-        background(240);
-        
-        if (!isGameOver) {
-          dino.show();
-          dino.move();
-          coachDino.show(dino);
+# Fonction pour gérer le saut
+def jump():
+    if not st.session_state.jumping and not st.session_state.game_over:
+        st.session_state.jumping = True
+        st.session_state.velocity = -10
 
-          // Gestion des obstacles
-          if (frameCount % 90 === 0) {
-            obstacles.push(new Obstacle());
-          }
+# Fonction pour réinitialiser le jeu
+def reset_game():
+    st.session_state.game_over = False
+    st.session_state.score = 0
+    st.session_state.dino_y = GROUND_Y - DINO_SIZE
+    st.session_state.velocity = 0
+    st.session_state.obstacles = []
+    st.session_state.jumping = False
 
-          for (let o of obstacles) {
-            o.move();
-            o.show();
+# Détection des touches
+st.text("Appuyez sur la barre d'espace pour sauter.")
+if st.button("Sauter"):
+    jump()
+if st.button("Redémarrer") and st.session_state.game_over:
+    reset_game()
 
-            // Affichage du mot IA sous chaque obstacle
-            fill(0);
-            text(obstacleWords[o.wordIndex], o.x + o.w / 2, o.y + 60);
+# Gestion des entrées clavier
+# Note: Streamlit ne supporte pas directement la détection des touches du clavier.
+# Une alternative serait d'utiliser un composant personnalisé ou des boutons pour les actions.
 
-            // Vérification de la collision
-            if (dino.hits(o)) {
-              isGameOver = true;
-            }
-          }
+# Boucle de jeu
+if not st.session_state.game_over:
+    placeholder = st.empty()
+    start_time = time.time()
+    last_time = start_time
+    while not st.session_state.game_over:
+        current_time = time.time()
+        delta = current_time - last_time
+        if delta < 1/FPS:
+            time.sleep(1/FPS - delta)
+            current_time = time.time()
+            delta = current_time - last_time
+        last_time = current_time
 
-          // Affichage du score
-          score++;
-          fill(0);
-          text("Score: " + score, width / 2, 30);
-        } else {
-          fill(0);
-          textSize(32);
-          text("Game Over", width / 2, height / 2);
-          textSize(18);
-          text("Press 'R' to Restart", width / 2, height / 2 + 40);
-        }
-      }
+        # Mise à jour du score
+        st.session_state.score += 1
 
-      function keyPressed() {
-        if (key == ' ') {
-          dino.jump();
-        } else if (key == 'R' || key == 'r') {
-          resetGame();
-        }
-      }
+        # Mise à jour de la position du dinosaure
+        if st.session_state.jumping:
+            st.session_state.velocity += 1  # Gravité
+            st.session_state.dino_y += st.session_state.velocity
+            if st.session_state.dino_y >= GROUND_Y - DINO_SIZE:
+                st.session_state.dino_y = GROUND_Y - DINO_SIZE
+                st.session_state.jumping = False
+                st.session_state.velocity = 0
 
-      function resetGame() {
-        isGameOver = false;
-        obstacles = [];
-        score = 0;
-        dino = new Dino();
-        obstacles.push(new Obstacle());
-      }
+        # Génération d'obstacles
+        if random.randint(1, 20) == 1:
+            obstacle_x = WIDTH
+            obstacle_label = random.choice(["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité"])
+            st.session_state.obstacles.append({"x": obstacle_x, "label": obstacle_label})
 
-      class Dino {
-        constructor() {
-          this.x = 50;
-          this.y = height - 60;
-          this.size = 40;
-          this.velY = 0;
-          this.gravity = 1.2;
-        }
+        # Mise à jour des obstacles
+        for obstacle in st.session_state.obstacles:
+            obstacle["x"] -= 5  # Vitesse de déplacement des obstacles
 
-        jump() {
-          if (this.y == height - 60) {
-            this.velY = -15;
-          }
-        }
+        # Suppression des obstacles hors de l'écran
+        st.session_state.obstacles = [ob for ob in st.session_state.obstacles if ob["x"] > -OBSTACLE_WIDTH]
 
-        hits(obstacle) {
-          return (this.x + this.size > obstacle.x &&
-                  this.x < obstacle.x + obstacle.w &&
-                  this.y + this.size > obstacle.y);
-        }
+        # Détection des collisions
+        for obstacle in st.session_state.obstacles:
+            if (0 < obstacle["x"] < DINO_SIZE) and (st.session_state.dino_y + DINO_SIZE > GROUND_Y - OBSTACLE_HEIGHT):
+                st.session_state.game_over = True
 
-        move() {
-          this.y += this.velY;
-          this.velY += this.gravity;
-          this.y = constrain(this.y, 0, height - 60);
-        }
+        # Création de l'image du jeu
+        img = Image.new("RGB", (WIDTH, HEIGHT), "white")
+        draw = ImageDraw.Draw(img)
 
-        show() {
-          fill(0, 0, 255);  // Dino en bleu
-          rect(this.x, this.y, this.size, this.size);
-        }
-      }
+        # Dessin du sol
+        draw.line((0, GROUND_Y, WIDTH, GROUND_Y), fill="black", width=2)
 
-      class CoachDino {
-        show(dino) {
-          fill(0, 0, 255);
-          ellipse(dino.x + 50, dino.y - 50, 20, 20);  // Coach en bleu
-        }
-      }
+        # Dessin du dinosaure
+        draw.rectangle([0, st.session_state.dino_y, DINO_SIZE, st.session_state.dino_y + DINO_SIZE], fill="blue")
 
-      class Obstacle {
-        constructor() {
-          this.w = 20;
-          this.h = 40;
-          this.x = width;
-          this.y = height - this.h;
-          this.wordIndex = floor(random(obstacleWords.length));
-        }
+        # Dessin du coach volant "Inside"
+        coach_x = DINO_SIZE // 2 - COACH_SIZE // 2
+        coach_y = st.session_state.dino_y - COACH_SIZE - 5
+        draw.ellipse([coach_x, coach_y, coach_x + COACH_SIZE, coach_y + COACH_SIZE], fill="blue")
 
-        move() {
-          this.x -= 5;
-        }
+        # Dessin des obstacles
+        for obstacle in st.session_state.obstacles:
+            draw.rectangle([obstacle["x"], GROUND_Y - OBSTACLE_HEIGHT, obstacle["x"] + OBSTACLE_WIDTH, GROUND_Y], fill="red")
+            draw.text((obstacle["x"], GROUND_Y), obstacle["label"], fill="black")
 
-        show() {
-          fill(0);
-          rect(this.x, this.y, this.w, this.h);
-        }
-      }
-    </script>
-  </body>
-</html>
-"""
+        # Dessin du score
+        draw.text((WIDTH - 100, 10), f"Score: {st.session_state.score}", fill="black")
 
-# Affichage du jeu avec Streamlit Components
-components.html(html_code, height=500, width=800)
+        # Affichage de l'image
+        placeholder.image(img, use_column_width=False)
+
+    # Affichage du Game Over et du bouton de redémarrage
+    st.markdown("<h1 style='color: red;'>Game Over</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h2>Score final: {st.session_state.score}</h2>", unsafe_allow_html=True)
+    if st.button("Redémarrer"):
+        reset_game()
+else:
+    # Affichage initial du jeu
+    img = Image.new("RGB", (WIDTH, HEIGHT), "white")
+    draw = ImageDraw.Draw(img)
+    draw.line((0, GROUND_Y, WIDTH, GROUND_Y), fill="black", width=2)
+    draw.rectangle([0, st.session_state.dino_y, DINO_SIZE, st.session_state.dino_y + DINO_SIZE], fill="blue")
+    coach_x = DINO_SIZE // 2 - COACH_SIZE // 2
+    coach_y = st.session_state.dino_y - COACH_SIZE - 5
+    draw.ellipse([coach_x, coach_y, coach_x + COACH_SIZE, coach_y + COACH_SIZE], fill="blue")
+    draw.text((WIDTH - 100, 10), f"Score: {st.session_state.score}", fill="black")
+    st.image(img, use_column_width=False)
