@@ -1,99 +1,133 @@
 import streamlit as st
-import pygame
-import random
-import time
+import streamlit.components.v1 as components
 
-# Initialiser Pygame
-pygame.init()
-
-# Fonction pour lancer le jeu
-def jeu_dinosaure():
-    # Dimensions de la fenêtre de jeu
-    LARGEUR_FENETRE, HAUTEUR_FENETRE = 800, 400
-    fenetre = pygame.display.set_mode((LARGEUR_FENETRE, HAUTEUR_FENETRE))
-    pygame.display.set_caption("Dino avec Coach Inside")
-
-    # Couleurs
-    NOIR = (0, 0, 0)
-    BLANC = (255, 255, 255)
-    BLEU = (0, 0, 255)
-
-    # Chargement des images du dinosaure principal et du dinosaure volant
-    dino_image = pygame.Surface((40, 60))  # Placeholder pour le dinosaure principal
-    dino_image.fill(NOIR)  # T-Rex original
-    coach_image = pygame.Surface((30, 30))  # Placeholder pour "Inside"
-    coach_image.fill(BLEU)  # Inside est en bleu
-
-    # Position initiale des dinosaures
-    dino_x, dino_y = 50, HAUTEUR_FENETRE - 60
-    coach_x, coach_y = dino_x + 50, dino_y - 80
-
-    # Obstacle et mots IA
-    obstacles = ["RGPD", "Hallucination", "Erreurs", "Biais"]
-    obstacle_x = LARGEUR_FENETRE
-    obstacle_y = HAUTEUR_FENETRE - 40
-    obstacle_texte = random.choice(obstacles)
-    obstacle_vitesse = 5
-
-    # Vitesse du dinosaure
-    dino_vel_y = 0
-    saut = False
-    score = 0
-    police = pygame.font.Font(None, 36)
-
-    clock = pygame.time.Clock()
-    jeu_en_cours = True
-
-    while jeu_en_cours:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                jeu_en_cours = False
-
-        # Gestion du saut
-        touches = pygame.key.get_pressed()
-        if touches[pygame.K_SPACE] and not saut:
-            saut = True
-            dino_vel_y = -15
-
-        if saut:
-            dino_y += dino_vel_y
-            dino_vel_y += 1
-            if dino_y >= HAUTEUR_FENETRE - 60:
-                dino_y = HAUTEUR_FENETRE - 60
-                saut = False
-
-        # Déplacement des obstacles
-        obstacle_x -= obstacle_vitesse
-        if obstacle_x < -50:
-            obstacle_x = LARGEUR_FENETRE
-            obstacle_texte = random.choice(obstacles)
-            score += 1
-
-        # Collision
-        if (dino_x < obstacle_x + 40 and dino_x + 40 > obstacle_x and
-                dino_y < obstacle_y + 40 and dino_y + 60 > obstacle_y):
-            jeu_en_cours = False
-
-        # Affichage des éléments du jeu
-        fenetre.fill(BLANC)
-        fenetre.blit(dino_image, (dino_x, dino_y))  # Dino principal
-        fenetre.blit(coach_image, (coach_x, coach_y))  # Coach volant
-
-        # Affichage de l'obstacle et du texte IA
-        pygame.draw.rect(fenetre, NOIR, (obstacle_x, obstacle_y, 40, 40))
-        texte_ia = police.render(obstacle_texte, True, NOIR)
-        fenetre.blit(texte_ia, (obstacle_x, obstacle_y + 40))
-
-        # Affichage du score
-        texte_score = police.render(f"Score: {score}", True, NOIR)
-        fenetre.blit(texte_score, (10, 10))
-
-        pygame.display.flip()
-        clock.tick(30)
-
-    pygame.quit()
-
-# Utilisation de Streamlit pour lancer le jeu
 st.title("Jeu du Dinosaure avec Coach Inside")
-if st.button("Lancer le jeu"):
-    jeu_dinosaure()
+
+# Code HTML et JavaScript intégrés pour p5.js
+html_code = """
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  </head>
+  <body>
+    <script>
+      let dino;
+      let obstacles = [];
+      let score = 0;
+      let obstacleWords = ["RGPD", "Hallucination", "Erreurs", "Biais"];
+      let coachDino;
+
+      function setup() {
+        createCanvas(800, 400);
+        dino = new Dino();
+        coachDino = new CoachDino();
+        obstacles.push(new Obstacle());
+      }
+
+      function draw() {
+        background(255);
+        dino.show();
+        dino.move();
+
+        // Coach dino volant
+        coachDino.show(dino);
+
+        // Gestion des obstacles
+        if (frameCount % 90 === 0) {
+          obstacles.push(new Obstacle());
+        }
+
+        for (let o of obstacles) {
+          o.move();
+          o.show();
+
+          // Affichage du mot IA sous chaque obstacle
+          fill(0);
+          textSize(16);
+          text(obstacleWords[o.wordIndex], o.x + 5, o.y + 55);
+
+          // Collision
+          if (dino.hits(o)) {
+            noLoop();
+          }
+        }
+
+        // Score
+        fill(0);
+        textSize(24);
+        text("Score: " + score, 10, 25);
+        score++;
+      }
+
+      function keyPressed() {
+        if (key == ' ') {
+          dino.jump();
+        }
+      }
+
+      class Dino {
+        constructor() {
+          this.x = 50;
+          this.y = height - 60;
+          this.size = 40;
+          this.velY = 0;
+          this.gravity = 1.2;
+        }
+
+        jump() {
+          if (this.y == height - 60) {
+            this.velY = -15;
+          }
+        }
+
+        hits(obstacle) {
+          return (this.x + this.size > obstacle.x &&
+                  this.x < obstacle.x + obstacle.w &&
+                  this.y + this.size > obstacle.y);
+        }
+
+        move() {
+          this.y += this.velY;
+          this.velY += this.gravity;
+          this.y = constrain(this.y, 0, height - 60);
+        }
+
+        show() {
+          fill(0, 0, 255);  // Dino bleu
+          rect(this.x, this.y, this.size, this.size);
+        }
+      }
+
+      class CoachDino {
+        show(dino) {
+          fill(0, 0, 255);
+          ellipse(dino.x + 50, dino.y - 50, 30, 30);  // Coach en bleu
+        }
+      }
+
+      class Obstacle {
+        constructor() {
+          this.w = 20;
+          this.h = 40;
+          this.x = width;
+          this.y = height - this.h;
+          this.wordIndex = floor(random(obstacleWords.length));
+        }
+
+        move() {
+          this.x -= 5;
+        }
+
+        show() {
+          fill(0);
+          rect(this.x, this.y, this.w, this.h);
+        }
+      }
+    </script>
+  </body>
+</html>
+"""
+
+# Afficher le jeu directement dans Streamlit
+components.html(html_code, height=500, width=800)
