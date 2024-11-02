@@ -102,26 +102,28 @@
             box-sizing: border-box;
         }
 
-        /* Style pour le bouton de saut */
-        #jumpButton {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 80px;
-            height: 50px;
-            background-color: #ff5722;
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            font-size: 16px;
-            color: white;
-            cursor: pointer;
-            z-index: 3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-        }
+     /* Style pour le bouton de saut */
+#jumpButton {
+    position: fixed;
+    bottom: 10px; /* Ajustez cette valeur si besoin */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 50px;
+    background-color: #ff5722;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
 
         #jumpButton:active {
             background-color: #e64a19;
