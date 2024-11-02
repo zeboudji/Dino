@@ -9,6 +9,7 @@
             overflow: hidden;
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
+            position: relative;
         }
         #gameCanvas {
             display: block;
@@ -27,7 +28,7 @@
         }
         #gameOver {
             position: absolute;
-            top: 30%; /* Remonté de 40% à 30% */
+            top: 30%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 48px;
@@ -39,22 +40,22 @@
 
         #gameOverReason {
             display: block;
-            font-size: 24px; /* Taille augmentée pour le libellé du danger */
+            font-size: 24px;
             margin-top: 10px;
         }
 
-        /* Nouvel élément pour le message de victoire */
+        /* Élément pour le message de victoire */
         #gameWin {
             position: absolute;
-            top: 30%; /* Position similaire à gameOver */
+            top: 30%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 32px;
             color: green;
-            display: none; /* Caché initialement */
-            z-index: 2; /* Assure qu'il est au-dessus de gameOver */
+            display: none;
+            z-index: 2;
             text-align: center;
-            background-color: rgba(255, 255, 255, 0.9); /* Fond semi-transparent pour lisibilité */
+            background-color: rgba(255, 255, 255, 0.9);
             padding: 20px;
             border-radius: 10px;
         }
@@ -67,9 +68,9 @@
             margin-bottom: 20px;
         }
         #coachImage {
-            width: 150px; /* Ajustez la taille selon vos besoins */
+            width: 150px;
             height: auto;
-            border-radius: 50%; /* Rendre l'image ronde */
+            border-radius: 50%;
         }
 
         #restartButton {
@@ -83,10 +84,11 @@
             cursor: pointer;
             z-index: 1;
             background-color: Blue;
-            color: white; /* Assurez-vous que le texte est lisible */
+            color: white;
             border: none;
             border-radius: 5px;
         }
+
         /* Style pour le canvas de prévisualisation */
         #previewCanvas {
             position: absolute;
@@ -94,8 +96,8 @@
             right: 10px;
             border: 1px solid #000;
             background-color: #fff;
-            width: 200px; /* Largeur ajustée */
-            height: 120px; /* Hauteur ajustée */
+            width: 200px;
+            height: 120px;
             padding: 10px;
             box-sizing: border-box;
         }
@@ -105,31 +107,27 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 50px;
             background-color: #ff5722;
             border: none;
-            border-radius: 50%;
+            border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            font-size: 24px;
+            font-size: 16px;
             color: white;
             cursor: pointer;
-            z-index: 3; /* Au-dessus des autres éléments */
+            z-index: 3;
             display: flex;
             align-items: center;
             justify-content: center;
+            user-select: none;
         }
 
         #jumpButton:active {
             background-color: #e64a19;
         }
 
-        /* Optionnel : Ajouter une icône de saut (flèche vers le haut) */
-        #jumpButton::before {
-            content: '↑';
-        }
-
-        /* Pour les petits écrans, ajuster la taille du canvas si nécessaire */
+        /* Responsive Design pour les petits écrans */
         @media (max-width: 600px) {
             #gameCanvas {
                 width: 100%;
@@ -140,9 +138,9 @@
                 height: 60px;
             }
             #jumpButton {
-                width: 50px;
-                height: 50px;
-                font-size: 20px;
+                width: 60px;
+                height: 40px;
+                font-size: 14px;
                 bottom: 15px;
                 right: 15px;
             }
@@ -180,7 +178,7 @@
     <canvas id="previewCanvas" width="200" height="120"></canvas>
 
     <!-- Bouton de saut pour mobile -->
-    <button id="jumpButton" aria-label="Sauter"></button>
+    <button id="jumpButton" aria-label="Jump">Jump</button>
 
     <script>
         // Récupération des éléments du DOM
@@ -189,11 +187,11 @@
         const scoreElement = document.getElementById('score');
         const gameOverElement = document.getElementById('gameOver');
         const gameOverReasonElement = document.getElementById('gameOverReason');
-        const gameWinElement = document.getElementById('gameWin'); // Nouvel élément
+        const gameWinElement = document.getElementById('gameWin');
         const restartButton = document.getElementById('restartButton');
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
-        const jumpButton = document.getElementById('jumpButton'); // Bouton de saut
+        const jumpButton = document.getElementById('jumpButton');
 
         // Constantes du jeu
         const WIDTH = canvas.width; // 1200
@@ -214,9 +212,9 @@
         // Variables du jeu
         let score = 0;
         let gameOver = false;
-        let gameWin = false; // Nouvelle variable pour la victoire
+        let gameWin = false; // Variable pour la victoire
         let victoryStage = 0; // 0 : aucune victoire, 1 : victoire à 10 000 points, 2 : victoire à 15 000 points
-        let gameOverReason = ""; // Nouvelle variable pour stocker le danger causant le Game Over
+        let gameOverReason = ""; // Stocker le danger causant le Game Over
         let dino = {
             x: 100,
             y: GROUND_Y - DINO_SIZE,
@@ -294,7 +292,7 @@
 
         // Fonction pour gérer le saut du dinosaure
         function jump() {
-            if (!dino.isJumping && !gameOver && !gameWin) { // Ajout de !gameWin
+            if (!dino.isJumping && !gameOver && !gameWin) {
                 console.log("Saut initié");
                 dino.velocityY = -JUMP_FORCE;
                 dino.isJumping = true;
@@ -307,9 +305,9 @@
         function resetGame() {
             score = 0;
             gameOver = false;
-            gameWin = false; // Réinitialiser le flag de victoire
-            victoryStage = 0; // Réinitialiser l'étape de victoire
-            gameOverReason = ""; // Réinitialiser la raison du Game Over
+            gameWin = false;
+            victoryStage = 0;
+            gameOverReason = "";
             dino.y = GROUND_Y - DINO_SIZE;
             dino.velocityY = 0;
             dino.isJumping = false;
@@ -317,10 +315,10 @@
             coach.y = dino.y - coach.height - 10;
             obstacles = [];
             gameOverElement.style.display = 'none';
-            gameWinElement.style.display = 'none'; // Cacher le message de victoire
+            gameWinElement.style.display = 'none';
             restartButton.style.display = 'none';
-            restartButton.textContent = 'Redémarrer'; // Réinitialiser le texte du bouton
-            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height); // Effacer l'aperçu
+            restartButton.textContent = 'Redémarrer';
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
             // Créer un obstacle initial avec un espacement adéquat
             createObstacle();
             // Initialiser l'aperçu
@@ -332,7 +330,7 @@
         function createObstacle() {
             const label = obstacleLabels[Math.floor(Math.random() * obstacleLabels.length)];
             const obstacle = {
-                x: WIDTH + Math.random() * 300, // Ajouter une variation aléatoire pour l'espacement
+                x: WIDTH + Math.random() * 300, // Variation aléatoire pour l'espacement
                 y: GROUND_Y - OBSTACLE_HEIGHT,
                 width: OBSTACLE_WIDTH,
                 height: OBSTACLE_HEIGHT,
@@ -428,6 +426,12 @@
             // Mettre à jour la position du coach
             coach.x = dino.x + dino.width / 2 - coach.width / 2;
             coach.y = dino.y - coach.height - 10;
+
+            // Dessiner le nom "Explorateur" derrière le dino
+            ctx.fillStyle = "#000000"; // Noir
+            ctx.font = "20px Arial";
+            ctx.textAlign = "right";
+            ctx.fillText("Explorateur", dino.x - 10, dino.y + dino.height / 2 + 6); // Position ajustée
 
             // Dessiner le dinosaure
             if (dinoImg.complete) {
