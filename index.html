@@ -390,6 +390,12 @@
                 ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
             }
 
+            // **Ajouter le texte "explorateur" à gauche du dinosaure**
+            ctx.fillStyle = "#000000";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "right";
+            ctx.fillText("explorateur", dino.x - 10, dino.y + dino.height / 2);
+
             // Dessiner le coach volant "Inside"
             if (coachImg.complete) {
                 ctx.drawImage(coachImg, coach.x, coach.y, coach.width, coach.height);
