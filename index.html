@@ -185,9 +185,10 @@
         const MIN_JUMP_FORCE = 15; // Force minimale du saut
         const MAX_JUMP_FORCE = 30; // Force maximale du saut
         const MAX_HOLD_TIME = 1000; // Temps maximum pour atteindre le saut maximum (en ms)
-
         const MIN_OBSTACLE_TIMER_THRESHOLD = 34;
         const BASE_OBSTACLE_TIMER_THRESHOLD = 120;
+        const MIN_OBSTACLE_DISTANCE = 200; // Distance minimale entre les obstacles en pixels
+        const MAX_OBSTACLE_SPEED = 10; // Vitesse maximale des obstacles
 
         // Variables du jeu
         let score = 0;
@@ -210,6 +211,11 @@
             height: COACH_SIZE
         };
         let obstacles = [];
+
+        // Variables pour gérer les sauts
+        let jumpStartTime = null;
+        let jumpCount = 0;
+        const MAX_JUMPS = 2; // Autoriser jusqu'à 2 sauts consécutifs
 
         // Liste des étiquettes IA
         const obstacleLabels = ["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité"];
@@ -267,16 +273,14 @@
             };
         }
 
-        // Variables pour gérer la durée d'appui
-        let jumpStartTime = null;
-
         // Fonction pour gérer le saut du dinosaure
         function jump() {
-            if (!dino.isJumping && !gameOver && !gameWin) {
+            if (jumpCount < MAX_JUMPS && !gameOver && !gameWin) {
                 const holdTime = Math.min(Date.now() - jumpStartTime, MAX_HOLD_TIME);
                 const force = MIN_JUMP_FORCE + ((MAX_JUMP_FORCE - MIN_JUMP_FORCE) * (holdTime / MAX_HOLD_TIME));
                 dino.velocityY = -force;
                 dino.isJumping = true;
+                jumpCount++;
                 jumpStartTime = null; // Réinitialiser le temps d'appui
             }
         }
@@ -306,8 +310,15 @@
         // Fonction pour créer de nouveaux obstacles
         function createObstacle() {
             const label = obstacleLabels[Math.floor(Math.random() * obstacleLabels.length)];
+            const lastObstacle = obstacles[obstacles.length - 1];
+            let minX = WIDTH + MIN_OBSTACLE_DISTANCE;
+
+            if (lastObstacle) {
+                minX = Math.max(minX, lastObstacle.x + lastObstacle.width + MIN_OBSTACLE_DISTANCE);
+            }
+
             const obstacle = {
-                x: WIDTH + Math.random() * 300,
+                x: minX + Math.random() * 200, // Ajout d'un facteur aléatoire pour la distance supplémentaire
                 y: GROUND_Y - OBSTACLE_HEIGHT,
                 width: OBSTACLE_WIDTH,
                 height: OBSTACLE_HEIGHT,
@@ -373,6 +384,7 @@
                 dino.y = GROUND_Y - dino.height;
                 dino.isJumping = false;
                 dino.velocityY = 0;
+                jumpCount = 0; // Réinitialiser le nombre de sauts
             }
 
             // Mettre à jour la position du coach
@@ -416,7 +428,10 @@
             // Dessiner et mettre à jour les obstacles
             for (let i = 0; i < obstacles.length; i++) {
                 let obs = obstacles[i];
-                const currentSpeed = OBSTACLE_SPEED + Math.floor(score / 100) * 0.2;
+                const currentSpeed = Math.min(
+                    OBSTACLE_SPEED + Math.floor(score / 100) * 0.2,
+                    MAX_OBSTACLE_SPEED
+                );
                 obs.x -= currentSpeed;
 
                 // Dessiner l'obstacle avec son image spécifique
