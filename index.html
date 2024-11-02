@@ -43,6 +43,7 @@
             margin-top: 10px;
         }
 
+        /* Nouvel élément pour le message de victoire */
         #gameWin {
             position: absolute;
             top: 30%; /* Position similaire à gameOver */
@@ -329,7 +330,10 @@
         // Fonction principale de la boucle de jeu
         let obstacleTimer = 0;
         function gameLoop() {
-            if (gameOver || gameWin) return; // Arrêter la boucle si le jeu est terminé ou gagné
+            if (gameOver || gameWin) {
+                console.log("Exiting gameLoop: gameOver =", gameOver, "gameWin =", gameWin);
+                return; // Arrêter la boucle de jeu
+            }
 
             // Effacer le canvas
             ctx.clearRect(0, 0, WIDTH, HEIGHT);
@@ -430,14 +434,16 @@
             // Mettre à jour le score
             score++;
             scoreElement.textContent = `Score: ${score}`;
+            console.log(`Score updated: ${score}`);
 
             // Vérifier la condition de victoire
-            if (score >= 1000 && !gameWin) {
+            if (score >= 10000 && !gameWin) {
                 gameWin = true;
-                gameOver = true; // Arrêter la boucle de jeu
+                // gameOver = true; // Optionnel : vous pouvez choisir de ne pas définir gameOver ici
                 gameWinElement.style.display = 'block';
                 restartButton.style.display = 'block';
                 console.log("Félicitations ! Vous avez gagné.");
+                return; // Arrêter la boucle de jeu
             }
 
             // Appeler la prochaine frame
@@ -456,4 +462,3 @@
     </script>
 </body>
 </html>
-
