@@ -36,8 +36,11 @@
             font-size: 48px;
             color: red;
             display: none;
-            z-index: 1;
+            z-index: 5;
             text-align: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
         }
 
         #gameOverReason {
@@ -54,7 +57,7 @@
             font-size: 32px;
             color: green;
             display: none;
-            z-index: 2;
+            z-index: 5;
             text-align: center;
             background-color: rgba(255, 255, 255, 0.9);
             padding: 20px;
@@ -83,7 +86,7 @@
             font-size: 24px;
             display: none;
             cursor: pointer;
-            z-index: 1;
+            z-index: 5;
             background-color: Blue;
             color: white;
             border: none;
@@ -155,7 +158,7 @@
     <div id="gameWin">
         <!-- Le contenu sera mis à jour dynamiquement via JavaScript -->
     </div>
-    <button id="restartButton">Redémarrer</button>
+    <button id="restartButton">Recommencer</button>
     <canvas id="gameCanvas" width="1200" height="400"></canvas>
     <!-- Canvas pour la prévisualisation du prochain obstacle -->
     <canvas id="previewCanvas" width="200" height="120"></canvas>
@@ -202,6 +205,7 @@
         let gameWin = false;
         let victoryStage = 0;
         let gameOverReason = "";
+        let isPaused = false;
         let dino = {
             x: 100,
             y: GROUND_Y - DINO_SIZE,
@@ -294,6 +298,7 @@
             gameWin = false;
             victoryStage = 0;
             gameOverReason = "";
+            isPaused = false;
             dino.y = GROUND_Y - DINO_SIZE;
             dino.velocityY = 0;
             dino.isJumping = false;
@@ -368,7 +373,7 @@
         // Fonction principale de la boucle de jeu
         let obstacleTimer = 0;
         function gameLoop() {
-            if (gameOver || gameWin) {
+            if (gameOver || gameWin || isPaused) {
                 return;
             }
 
@@ -479,27 +484,33 @@
             // Vérifier les conditions de victoire
             if (score >= 10000 && victoryStage === 0) {
                 victoryStage = 1;
+                gameWin = true;
                 gameWinElement.innerHTML = `
-                    <h1>Félicitations !</h1>
-                    <p>Vous avez atteint 10 000 points et gagné 30 minutes d'acculturation avec le coach !</p>
-                    <img src="images/coach.png" alt="Coach" id="coachImage">
+                    <h1>Bravo !</h1>
+                    <p>Vous avez gagné une session de sensibilisation.<br>Voulez-vous continuer ?</p>
+                    <button id="continueButton">Continuer</button>
                 `;
                 gameWinElement.style.display = 'block';
-                restartButton.style.display = 'block';
-                restartButton.textContent = 'Continuer';
+
+                // Ajouter l'écouteur d'événement pour le bouton 'Continuer'
+                document.getElementById('continueButton').addEventListener('click', function() {
+                    gameWinElement.style.display = 'none';
+                    gameWin = false;
+                    requestAnimationFrame(gameLoop);
+                });
                 return;
             }
 
             if (score >= 15000 && victoryStage === 1) {
                 victoryStage = 2;
+                gameWin = true;
                 gameWinElement.innerHTML = `
-                    <h1>Félicitations !</h1>
-                    <p>Vous avez atteint 15 000 points et gagné 1h d'acculturation avec le coach !</p>
-                    <img src="images/coach.png" alt="Coach" id="coachImage">
+                    <h1>Bravo !</h1>
+                    <p>Vous avez gagné une session d'acculturation.</p>
                 `;
                 gameWinElement.style.display = 'block';
                 restartButton.style.display = 'block';
-                restartButton.textContent = 'Redémarrer';
+                restartButton.textContent = 'Recommencer';
                 return;
             }
 
@@ -513,6 +524,14 @@
                 jump(JUMP_FORCE);
             } else if (event.code === 'ArrowUp') {
                 jump(SUPER_JUMP_FORCE);
+            } else if (event.code === 'KeyP') {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    document.getElementById('pauseOverlay').style.display = 'flex';
+                } else {
+                    document.getElementById('pauseOverlay').style.display = 'none';
+                    requestAnimationFrame(gameLoop);
+                }
             }
         });
 
@@ -526,12 +545,7 @@
 
         // Gestion du bouton de redémarrage
         restartButton.addEventListener('click', function() {
-            if (victoryStage === 1) {
-                gameWinElement.style.display = 'none';
-                restartButton.style.display = 'none';
-                gameWin = false;
-                requestAnimationFrame(gameLoop);
-            } else if (victoryStage === 2) {
+            if (victoryStage === 2 && gameWin) {
                 resetGame();
             } else if (gameOver) {
                 resetGame();
