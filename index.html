@@ -550,13 +550,6 @@
             jump();
         });
 
-        // Optionnel : Ajouter la possibilité de sauter en touchant n'importe où sur l'écran
-        document.addEventListener('touchstart', function(event) {
-            // Empêcher le comportement par défaut (comme le défilement)
-            event.preventDefault();
-            jump();
-        }, { passive: false });
-
         // Optionnel : Ajouter la possibilité de sauter avec un balayage vers le haut
         let touchStartY = null;
 
@@ -578,24 +571,7 @@
             touchStartY = null;
         }, false);
 
-        // Gestion du bouton de redémarrage
-        restartButton.addEventListener('click', function() {
-            if (victoryStage === 1) {
-                // Continuer le jeu après la première victoire
-                gameWinElement.style.display = 'none';
-                restartButton.style.display = 'none';
-                gameWin = false; // Réinitialiser le drapeau gameWin pour permettre la reprise
-                requestAnimationFrame(gameLoop);
-            } else if (victoryStage === 2) {
-                // Redémarrer le jeu après la deuxième victoire
-                resetGame();
-            } else if (gameOver) {
-                // Redémarrer le jeu après une collision
-                resetGame();
-            }
-        });
-
-        // Empêcher le défilement de la page
+        // Empêcher le défilement de la page lorsque le jeu est actif
         document.body.addEventListener('touchmove', function(event) {
             event.preventDefault();
         }, { passive: false });
@@ -618,6 +594,23 @@
         window.addEventListener('resize', resizeCanvas);
         window.addEventListener('orientationchange', resizeCanvas);
         resizeCanvas(); // Appel initial
+
+        // Fonction pour réactiver le jeu après une victoire ou une défaite
+        restartButton.addEventListener('click', function() {
+            if (victoryStage === 1) {
+                // Continuer le jeu après la première victoire
+                gameWinElement.style.display = 'none';
+                restartButton.style.display = 'none';
+                gameWin = false; // Réinitialiser le drapeau gameWin pour permettre la reprise
+                requestAnimationFrame(gameLoop);
+            } else if (victoryStage === 2) {
+                // Redémarrer le jeu après la deuxième victoire
+                resetGame();
+            } else if (gameOver) {
+                // Redémarrer le jeu après une collision
+                resetGame();
+            }
+        });
     </script>
 </body>
 </html>
