@@ -1,141 +1,498 @@
-// Fonction principale de la boucle de jeu
-let obstacleTimer = 0;
-function gameLoop() {
-    if (gameOver || gameWin) {
-        console.log("Exiting gameLoop: gameOver =", gameOver, "gameWin =", gameWin);
-        return; // Arrêter la boucle de jeu
-    }
-
-    // Effacer le canvas
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-    // Dessiner le sol
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, GROUND_Y, WIDTH, 4); // Sol légèrement plus épais
-
-    // Gérer le saut
-    dino.velocityY += GRAVITY;
-    dino.y += dino.velocityY;
-
-    // Log de la position du dinosaure
-    console.log(`Dino position Y: ${dino.y.toFixed(2)}, VelocityY: ${dino.velocityY.toFixed(2)}, isJumping: ${dino.isJumping}`);
-
-    if (dino.y >= GROUND_Y - dino.height) {
-        dino.y = GROUND_Y - dino.height;
-        dino.isJumping = false;
-        dino.velocityY = 0;
-        console.log("Dino atterri");
-    }
-
-    // Mettre à jour la position du coach
-    coach.x = dino.x + dino.width / 2 - coach.width / 2;
-    coach.y = dino.y - coach.height - 10;
-
-    // Dessiner le dinosaure
-    if (dinoImg.complete) {
-        ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
-    }
-
-    // Dessiner le coach volant "Inside"
-    if (coachImg.complete) {
-        ctx.drawImage(coachImg, coach.x, coach.y, coach.width, coach.height);
-    }
-
-    // Ajouter le texte "Coach Y.ZEBOUDJI" au-dessus du coach
-    ctx.fillStyle = "#000000"; // Noir
-    ctx.font = "16px Arial"; // Taille augmentée pour meilleure lisibilité
-    ctx.textAlign = "center";
-    ctx.fillText("Coach Y.ZEBOUDJI", coach.x + coach.width / 2, coach.y - 10); // Position ajustée au-dessus du coach
-
-    // Gérer les obstacles
-    obstacleTimer++;
-    // Calculer le seuil d'obstacle avec un minimum pour éviter un espacement trop court
-    const dynamicObstacleTimerThreshold = Math.max(
-        MIN_OBSTACLE_TIMER_THRESHOLD,
-        BASE_OBSTACLE_TIMER_THRESHOLD - Math.floor(score / 100)
-    );
-    if (obstacleTimer > dynamicObstacleTimerThreshold) {
-        createObstacle();
-        obstacleTimer = 0;
-        updatePreview();
-    }
-
-    // Dessiner et mettre à jour les obstacles
-    for (let i = 0; i < obstacles.length; i++) {
-        let obs = obstacles[i];
-        const currentSpeed = OBSTACLE_SPEED + Math.floor(score / 100) * 0.2;
-        obs.x -= currentSpeed; // Augmenter la vitesse avec le score
-
-        // Dessiner l'obstacle avec son image spécifique
-        if (obs.image.complete) {
-            ctx.drawImage(obs.image, obs.x, obs.y, obs.width, obs.height);
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu du Dinosaure IA</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 2px solid #000000;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #000000;
+            z-index: 1;
+        }
+        #gameOver {
+            position: absolute;
+            top: 30%; /* Remonté de 40% à 30% */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: red;
+            display: none;
+            z-index: 1;
+            text-align: center;
         }
 
-        // Dessiner l'étiquette IA sous l'obstacle
-        ctx.fillStyle = "#000000"; // Noir
-        ctx.font = "16px Arial"; // Taille augmentée pour meilleure lisibilité
-        ctx.textAlign = "center";
-        ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height + 20); // Position ajustée
-
-        // Détecter les collisions
-        let dinoRect = {x: dino.x, y: dino.y, width: dino.width, height: dino.height};
-        let obsRect = {x: obs.x, y: obs.y, width: obs.width, height: obs.height};
-        if (detectCollision(dinoRect, obsRect)) {
-            gameOver = true;
-            gameOverReason = obs.label; // Stocker le label de l'obstacle causant la collision
-            gameOverElement.style.display = 'block';
-            restartButton.style.display = 'block';
-            gameOverReasonElement.textContent = gameOverReason; // Afficher le label dans le message Game Over
-            console.log(`Collision détectée avec ${gameOverReason}`);
+        #gameOverReason {
+            display: block;
+            font-size: 24px; /* Taille augmentée pour le libellé du danger */
+            margin-top: 10px;
         }
 
-        // Vérifier si l'obstacle a été passé
-        if (!obs.passed && obs.x + obs.width < dino.x) {
-            obs.passed = true;
-            updatePreview(); // Mettre à jour l'aperçu après avoir passé l'obstacle
+        /* Nouvel élément pour le message de victoire */
+        #gameWin {
+            position: absolute;
+            top: 30%; /* Position similaire à gameOver */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: green;
+            display: none; /* Caché initialement */
+            z-index: 2; /* Assure qu'il est au-dessus de gameOver */
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.9); /* Fond semi-transparent pour lisibilité */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #gameWin h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        #gameWin p {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #coachImage {
+            width: 150px; /* Ajustez la taille selon vos besoins */
+            height: auto;
+            border-radius: 50%; /* Rendre l'image ronde */
         }
 
-        // Supprimer les obstacles hors écran
-        if (obs.x + obs.width < 0) {
-            obstacles.splice(i, 1);
-            i--;
+        #restartButton {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 60px;
+            font-size: 24px;
+            display: none;
+            cursor: pointer;
+            z-index: 1;
+            background-color: Blue;
+            color: white; /* Assurez-vous que le texte est lisible */
+            border: none;
+            border-radius: 5px;
         }
-    }
+        /* Style pour le canvas de prévisualisation */
+        #previewCanvas {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border: 1px solid #000;
+            background-color: #fff;
+            width: 200px; /* Largeur ajustée */
+            height: 120px; /* Hauteur ajustée */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="gameOver">
+        Game Over par : <br>
+        <span id="gameOverReason"></span>
+    </div>
+    <div id="gameWin">
+        <!-- Le contenu sera mis à jour dynamiquement via JavaScript -->
+    </div>
+    <button id="restartButton">Redémarrer</button>
+    <canvas id="gameCanvas" width="1200" height="400"></canvas>
+    <!-- Canvas pour la prévisualisation du prochain obstacle -->
+    <canvas id="previewCanvas" width="200" height="120"></canvas>
 
-    // Mettre à jour le score
-    score++;
-    scoreElement.textContent = `Score: ${score}`;
-    console.log(`Score updated: ${score}`);
+    <script>
+        // Récupération des éléments du DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gameOverElement = document.getElementById('gameOver');
+        const gameOverReasonElement = document.getElementById('gameOverReason');
+        const gameWinElement = document.getElementById('gameWin'); // Nouvel élément
+        const restartButton = document.getElementById('restartButton');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
 
-    // Vérifier les conditions de victoire
-    if (score >= 1000 && victoryStage === 0) {
-        victoryStage = 1;
-        gameWinElement.innerHTML = `
-            <h1>Félicitations !</h1>
-            <p>Vous avez atteint 10 000 points et gagné 30 minutes d'acculturation avec le coach !</p>
-            <img src="images/coach.png" alt="Coach" id="coachImage">
-        `;
-        gameWinElement.style.display = 'block';
-        restartButton.style.display = 'block';
-        restartButton.textContent = 'Continuer';
-        console.log("Félicitations ! Vous avez atteint 10 000 points.");
-        return; // Arrêter la boucle de jeu
-    }
+        // Constantes du jeu
+        const WIDTH = canvas.width; // 1200
+        const HEIGHT = canvas.height; // 400
+        const GROUND_Y = 350; // Position du sol ajustée pour la nouvelle hauteur
+        const DINO_SIZE = 60; // Taille du dinosaure réduite
+        const COACH_SIZE = 45; // Taille du coach réduite
+        const OBSTACLE_WIDTH = 50; // Taille réduite
+        const OBSTACLE_HEIGHT = 80; // Taille réduite
+        const OBSTACLE_SPEED = 5; // Vitesse initiale réduite
+        const GRAVITY = 0.8; // Gravité ajustée (réduite de 1.0 à 0.8)
+        const JUMP_FORCE = 20; // Force de saut ajustée (augmentée de 18 à 20)
 
-    if (score >= 1500 && victoryStage === 1) {
-        victoryStage = 2;
-        gameWinElement.innerHTML = `
-            <h1>Félicitations !</h1>
-            <p>Vous avez atteint 15 000 points et gagné 1h d'acculturation avec le coach !</p>
-            <img src="images/coach.png" alt="Coach" id="coachImage">
-        `;
-        gameWinElement.style.display = 'block';
-        restartButton.style.display = 'block';
-        restartButton.textContent = 'Redémarrer';
-        console.log("Félicitations ! Vous avez atteint 15 000 points.");
-        return; // Arrêter la boucle de jeu
-    }
+        // Seuil minimal pour l'espacement des obstacles
+        const MIN_OBSTACLE_TIMER_THRESHOLD = 34; // Frames (basé sur la durée du saut)
+        const BASE_OBSTACLE_TIMER_THRESHOLD = 120; // Frames
 
-    // Appeler la prochaine frame
-    requestAnimationFrame(gameLoop);
-}
+        // Variables du jeu
+        let score = 0;
+        let gameOver = false;
+        let gameWin = false; // Nouvelle variable pour la victoire
+        let victoryStage = 0; // 0 : aucune victoire, 1 : victoire à 10 000 points, 2 : victoire à 15 000 points
+        let gameOverReason = ""; // Nouvelle variable pour stocker le danger causant le Game Over
+        let dino = {
+            x: 100,
+            y: GROUND_Y - DINO_SIZE,
+            width: DINO_SIZE,
+            height: DINO_SIZE,
+            velocityY: 0,
+            isJumping: false
+        };
+        let coach = {
+            x: dino.x + DINO_SIZE / 2 - COACH_SIZE / 2,
+            y: dino.y - COACH_SIZE - 10, // Ajusté pour la nouvelle hauteur
+            width: COACH_SIZE,
+            height: COACH_SIZE
+        };
+        let obstacles = [];
+
+        // Liste des étiquettes IA
+        const obstacleLabels = ["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité"];
+
+        // Charger les images (pour le dinosaure et le coach)
+        const dinoImg = new Image();
+        dinoImg.src = 'images/dino.png';
+        const coachImg = new Image();
+        coachImg.src = 'images/coach.png';
+
+        // Mapping entre les étiquettes IA et leurs images correspondantes
+        const obstacleImageMap = {
+            "RGPD": 'images/rgpd.png',
+            "Hallucination": 'images/obstacle3.png',
+            "Erreurs": 'images/erreurs.png',
+            "Biais": 'images/biais.png',
+            "Sécurité": 'images/securite.png'
+        };
+
+        // Récupérer les URLs des images des obstacles
+        const obstacleImageSources = Object.values(obstacleImageMap);
+
+        // Compter le nombre total d'images à charger
+        const totalImages = 2 + obstacleImageSources.length; // dino, coach + obstacles
+
+        let imagesLoaded = 0;
+
+        // Fonction pour démarrer le jeu après le chargement des images
+        function startGame() {
+            // Créer un seul obstacle initial avec un espacement adéquat
+            createObstacle();
+            // Initialiser l'aperçu si possible
+            initializePreview();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Fonction pour vérifier le chargement des images
+        function imageLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                console.log('Toutes les images sont chargées.');
+                startGame();
+            }
+        }
+
+        // Attacher les gestionnaires de chargement
+        dinoImg.onload = imageLoaded;
+        coachImg.onload = imageLoaded;
+
+        // Charger les images des obstacles
+        const obstacleImages = {};
+        for (const [label, src] of Object.entries(obstacleImageMap)) {
+            obstacleImages[label] = new Image();
+            obstacleImages[label].src = src;
+            obstacleImages[label].onload = imageLoaded;
+            obstacleImages[label].onerror = function() {
+                console.error(`Erreur de chargement de l'image: ${src}`);
+            };
+        }
+
+        // Fonction pour gérer le saut du dinosaure
+        function jump() {
+            if (!dino.isJumping && !gameOver && !gameWin) { // Ajout de !gameWin
+                console.log("Saut initié");
+                dino.velocityY = -JUMP_FORCE;
+                dino.isJumping = true;
+            } else {
+                console.log("Saut impossible : ", { isJumping: dino.isJumping, gameOver: gameOver, gameWin: gameWin });
+            }
+        }
+
+        // Fonction pour réinitialiser le jeu
+        function resetGame() {
+            score = 0;
+            gameOver = false;
+            gameWin = false; // Réinitialiser le flag de victoire
+            victoryStage = 0; // Réinitialiser l'étape de victoire
+            gameOverReason = ""; // Réinitialiser la raison du Game Over
+            dino.y = GROUND_Y - DINO_SIZE;
+            dino.velocityY = 0;
+            dino.isJumping = false;
+            coach.x = dino.x + dino.width / 2 - coach.width / 2;
+            coach.y = dino.y - coach.height - 10;
+            obstacles = [];
+            gameOverElement.style.display = 'none';
+            gameWinElement.style.display = 'none'; // Cacher le message de victoire
+            restartButton.style.display = 'none';
+            restartButton.textContent = 'Redémarrer'; // Réinitialiser le texte du bouton
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height); // Effacer l'aperçu
+            // Créer un obstacle initial avec un espacement adéquat
+            createObstacle();
+            // Initialiser l'aperçu
+            initializePreview();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Fonction pour créer de nouveaux obstacles
+        function createObstacle() {
+            const label = obstacleLabels[Math.floor(Math.random() * obstacleLabels.length)];
+            const obstacle = {
+                x: WIDTH + Math.random() * 300, // Ajouter une variation aléatoire pour l'espacement
+                y: GROUND_Y - OBSTACLE_HEIGHT,
+                width: OBSTACLE_WIDTH,
+                height: OBSTACLE_HEIGHT,
+                label: label,
+                image: obstacleImages[label], // Assigner l'image basée sur le label
+                passed: false // Indique si l'obstacle a été passé
+            };
+            obstacles.push(obstacle);
+            console.log(`Obstacle créé: ${label} à x=${obstacle.x}`);
+        }
+
+        // Fonction pour détecter les collisions
+        function detectCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // Fonction pour mettre à jour l'aperçu du prochain obstacle
+        function updatePreview() {
+            if (obstacles.length >= 2) {
+                const nextObstacle = obstacles[1];
+                console.log(`Prévisualisation: ${nextObstacle.label}`);
+                // Effacer le canvas de prévisualisation
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+                // Dessiner le texte "Danger IA" en plus petit
+                previewCtx.fillStyle = "#FF0000"; // Rouge pour attirer l'attention
+                previewCtx.font = "18px Arial"; // Taille plus petite pour le titre
+                previewCtx.textAlign = "center";
+                previewCtx.fillText("Danger IA", previewCanvas.width / 2, 30);
+
+                // Dessiner le libellé du danger en plus grand
+                previewCtx.fillStyle = "#000000"; // Noir
+                previewCtx.font = "22px Arial"; // Taille plus grande pour le libellé
+                previewCtx.textAlign = "center";
+                previewCtx.fillText(nextObstacle.label, previewCanvas.width / 2, 70);
+            }
+        }
+
+        // Fonction pour initialiser l'aperçu au début du jeu
+        function initializePreview() {
+            if (obstacles.length >= 2) {
+                const nextObstacle = obstacles[1];
+                console.log(`Initialisation de la prévisualisation: ${nextObstacle.label}`);
+                // Effacer le canvas de prévisualisation
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+                // Dessiner le texte "Danger IA" en plus petit
+                previewCtx.fillStyle = "#FF0000"; // Rouge pour attirer l'attention
+                previewCtx.font = "18px Arial"; // Taille plus petite pour le titre
+                previewCtx.textAlign = "center";
+                previewCtx.fillText("Danger IA", previewCanvas.width / 2, 30);
+
+                // Dessiner le libellé du danger en plus grand
+                previewCtx.fillStyle = "#000000"; // Noir
+                previewCtx.font = "22px Arial"; // Taille plus grande pour le libellé
+                previewCtx.textAlign = "center";
+                previewCtx.fillText(nextObstacle.label, previewCanvas.width / 2, 70);
+            }
+        }
+
+        // Fonction principale de la boucle de jeu
+        let obstacleTimer = 0;
+        function gameLoop() {
+            if (gameOver || gameWin) {
+                console.log("Exiting gameLoop: gameOver =", gameOver, "gameWin =", gameWin);
+                return; // Arrêter la boucle de jeu
+            }
+
+            // Effacer le canvas
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            // Dessiner le sol
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, GROUND_Y, WIDTH, 4); // Sol légèrement plus épais
+
+            // Gérer le saut
+            dino.velocityY += GRAVITY;
+            dino.y += dino.velocityY;
+
+            // Log de la position du dinosaure
+            console.log(`Dino position Y: ${dino.y.toFixed(2)}, VelocityY: ${dino.velocityY.toFixed(2)}, isJumping: ${dino.isJumping}`);
+
+            if (dino.y >= GROUND_Y - dino.height) {
+                dino.y = GROUND_Y - dino.height;
+                dino.isJumping = false;
+                dino.velocityY = 0;
+                console.log("Dino atterri");
+            }
+
+            // Mettre à jour la position du coach
+            coach.x = dino.x + dino.width / 2 - coach.width / 2;
+            coach.y = dino.y - coach.height - 10;
+
+            // Dessiner le dinosaure
+            if (dinoImg.complete) {
+                ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+            }
+
+            // Dessiner le coach volant "Inside"
+            if (coachImg.complete) {
+                ctx.drawImage(coachImg, coach.x, coach.y, coach.width, coach.height);
+            }
+
+            // Ajouter le texte "Coach Y.ZEBOUDJI" au-dessus du coach
+            ctx.fillStyle = "#000000"; // Noir
+            ctx.font = "16px Arial"; // Taille augmentée pour meilleure lisibilité
+            ctx.textAlign = "center";
+            ctx.fillText("Coach Y.ZEBOUDJI", coach.x + coach.width / 2, coach.y - 10); // Position ajustée au-dessus du coach
+
+            // Gérer les obstacles
+            obstacleTimer++;
+            // Calculer le seuil d'obstacle avec un minimum pour éviter un espacement trop court
+            const dynamicObstacleTimerThreshold = Math.max(
+                MIN_OBSTACLE_TIMER_THRESHOLD,
+                BASE_OBSTACLE_TIMER_THRESHOLD - Math.floor(score / 100)
+            );
+            if (obstacleTimer > dynamicObstacleTimerThreshold) {
+                createObstacle();
+                obstacleTimer = 0;
+                updatePreview();
+            }
+
+            // Dessiner et mettre à jour les obstacles
+            for (let i = 0; i < obstacles.length; i++) {
+                let obs = obstacles[i];
+                const currentSpeed = OBSTACLE_SPEED + Math.floor(score / 100) * 0.2;
+                obs.x -= currentSpeed; // Augmenter la vitesse avec le score
+
+                // Dessiner l'obstacle avec son image spécifique
+                if (obs.image.complete) {
+                    ctx.drawImage(obs.image, obs.x, obs.y, obs.width, obs.height);
+                }
+
+                // Dessiner l'étiquette IA sous l'obstacle
+                ctx.fillStyle = "#000000"; // Noir
+                ctx.font = "16px Arial"; // Taille augmentée pour meilleure lisibilité
+                ctx.textAlign = "center";
+                ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height + 20); // Position ajustée
+
+                // Détecter les collisions
+                let dinoRect = {x: dino.x, y: dino.y, width: dino.width, height: dino.height};
+                let obsRect = {x: obs.x, y: obs.y, width: obs.width, height: obs.height};
+                if (detectCollision(dinoRect, obsRect)) {
+                    gameOver = true;
+                    gameOverReason = obs.label; // Stocker le label de l'obstacle causant la collision
+                    gameOverElement.style.display = 'block';
+                    restartButton.style.display = 'block';
+                    gameOverReasonElement.textContent = gameOverReason; // Afficher le label dans le message Game Over
+                    console.log(`Collision détectée avec ${gameOverReason}`);
+                }
+
+                // Vérifier si l'obstacle a été passé
+                if (!obs.passed && obs.x + obs.width < dino.x) {
+                    obs.passed = true;
+                    updatePreview(); // Mettre à jour l'aperçu après avoir passé l'obstacle
+                }
+
+                // Supprimer les obstacles hors écran
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // Mettre à jour le score
+            score++;
+            scoreElement.textContent = `Score: ${score}`;
+            console.log(`Score updated: ${score}`);
+
+            // Vérifier les conditions de victoire
+            if (score >= 10000 && victoryStage === 0) {
+                victoryStage = 1;
+                gameWinElement.innerHTML = `
+                    <h1>Félicitations !</h1>
+                    <p>Vous avez atteint 10 000 points et gagné 30 minutes d'acculturation avec le coach !</p>
+                    <img src="images/coach.png" alt="Coach" id="coachImage">
+                `;
+                gameWinElement.style.display = 'block';
+                restartButton.style.display = 'block';
+                restartButton.textContent = 'Continuer';
+                console.log("Félicitations ! Vous avez atteint 10 000 points.");
+                return; // Arrêter la boucle de jeu
+            }
+
+            if (score >= 15000 && victoryStage === 1) {
+                victoryStage = 2;
+                gameWinElement.innerHTML = `
+                    <h1>Félicitations !</h1>
+                    <p>Vous avez atteint 15 000 points et gagné 1h d'acculturation avec le coach !</p>
+                    <img src="images/coach.png" alt="Coach" id="coachImage">
+                `;
+                gameWinElement.style.display = 'block';
+                restartButton.style.display = 'block';
+                restartButton.textContent = 'Redémarrer';
+                console.log("Félicitations ! Vous avez atteint 15 000 points.");
+                return; // Arrêter la boucle de jeu
+            }
+
+            // Appeler la prochaine frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Gestion des entrées clavier
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space') {
+                jump();
+            }
+        });
+
+        // Gestion du bouton de redémarrage
+        restartButton.addEventListener('click', function() {
+            if (victoryStage === 1) {
+                // Continuer le jeu après la première victoire
+                gameWinElement.style.display = 'none';
+                restartButton.style.display = 'none';
+                gameWin = false; // Réinitialiser le drapeau gameWin pour permettre la reprise
+                requestAnimationFrame(gameLoop);
+            } else if (victoryStage === 2) {
+                // Redémarrer le jeu après la deuxième victoire
+                resetGame();
+            } else if (gameOver) {
+                // Redémarrer le jeu après une collision
+                resetGame();
+            }
+        });
+    </script>
+</body>
+</html>
