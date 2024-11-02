@@ -106,7 +106,7 @@
         /* Style pour le bouton Jump */
         #jumpButton {
             position: fixed;
-            bottom: 160px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             padding: 15px 30px;
@@ -132,10 +132,13 @@
                 font-size: 18px;
                 padding: 10px 30px;
             }
-            /* Pas besoin de modifier #jumpButton ici puisqu'il est toujours affiché */
             #previewCanvas {
                 width: 150px;
                 height: 90px;
+            }
+            #jumpButton {
+                font-size: 18px;
+                padding: 10px 20px;
             }
         }
     </style>
@@ -179,7 +182,9 @@
         const OBSTACLE_HEIGHT = 80;
         const OBSTACLE_SPEED = 5;
         const GRAVITY = 0.8;
-        const JUMP_FORCE = 20;
+        const MIN_JUMP_FORCE = 15; // Force minimale du saut
+        const MAX_JUMP_FORCE = 30; // Force maximale du saut
+        const MAX_HOLD_TIME = 1000; // Temps maximum pour atteindre le saut maximum (en ms)
 
         const MIN_OBSTACLE_TIMER_THRESHOLD = 34;
         const BASE_OBSTACLE_TIMER_THRESHOLD = 120;
@@ -262,11 +267,17 @@
             };
         }
 
+        // Variables pour gérer la durée d'appui
+        let jumpStartTime = null;
+
         // Fonction pour gérer le saut du dinosaure
         function jump() {
             if (!dino.isJumping && !gameOver && !gameWin) {
-                dino.velocityY = -JUMP_FORCE;
+                const holdTime = Math.min(Date.now() - jumpStartTime, MAX_HOLD_TIME);
+                const force = MIN_JUMP_FORCE + ((MAX_JUMP_FORCE - MIN_JUMP_FORCE) * (holdTime / MAX_HOLD_TIME));
+                dino.velocityY = -force;
                 dino.isJumping = true;
+                jumpStartTime = null; // Réinitialiser le temps d'appui
             }
         }
 
@@ -337,22 +348,7 @@
 
         // Fonction pour initialiser l'aperçu au début du jeu
         function initializePreview() {
-            if (obstacles.length >= 2) {
-                const nextObstacle = obstacles[1];
-                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-
-                // Dessiner le texte "Danger IA" en plus petit
-                previewCtx.fillStyle = "#FF0000";
-                previewCtx.font = "18px Arial";
-                previewCtx.textAlign = "center";
-                previewCtx.fillText("Danger IA", previewCanvas.width / 2, 30);
-
-                // Dessiner le libellé du danger en plus grand
-                previewCtx.fillStyle = "#000000";
-                previewCtx.font = "22px Arial";
-                previewCtx.textAlign = "center";
-                previewCtx.fillText(nextObstacle.label, previewCanvas.width / 2, 70);
-            }
+            updatePreview();
         }
 
         // Fonction principale de la boucle de jeu
@@ -495,14 +491,49 @@
 
         // Gestion des entrées clavier
         document.addEventListener('keydown', function(event) {
-            if (event.code === 'Space') {
+            if (event.code === 'Space' && jumpStartTime === null) {
+                jumpStartTime = Date.now();
+            }
+        });
+
+        document.addEventListener('keyup', function(event) {
+            if (event.code === 'Space' && jumpStartTime !== null) {
                 jump();
             }
         });
 
-        // Gestion du bouton Jump
-        jumpButton.addEventListener('click', function() {
-            jump();
+        // Gestion du bouton Jump pour les clics
+        let buttonPressStartTime = null;
+
+        jumpButton.addEventListener('mousedown', function() {
+            if (!dino.isJumping && !gameOver && !gameWin && buttonPressStartTime === null) {
+                buttonPressStartTime = Date.now();
+            }
+        });
+
+        jumpButton.addEventListener('mouseup', function() {
+            if (buttonPressStartTime !== null) {
+                jumpStartTime = buttonPressStartTime;
+                jump();
+                buttonPressStartTime = null;
+            }
+        });
+
+        // Gestion pour les appareils tactiles
+        jumpButton.addEventListener('touchstart', function(event) {
+            event.preventDefault();
+            if (!dino.isJumping && !gameOver && !gameWin && buttonPressStartTime === null) {
+                buttonPressStartTime = Date.now();
+            }
+        });
+
+        jumpButton.addEventListener('touchend', function(event) {
+            event.preventDefault();
+            if (buttonPressStartTime !== null) {
+                jumpStartTime = buttonPressStartTime;
+                jump();
+                buttonPressStartTime = null;
+            }
         });
 
         // Gestion du bouton de redémarrage
