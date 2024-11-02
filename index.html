@@ -9,13 +9,15 @@
             overflow: hidden;
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
-            position: relative;
         }
         #gameCanvas {
             display: block;
             margin: 0 auto;
             background-color: #ffffff;
             border: 2px solid #000000;
+            width: 100%;
+            max-width: 1200px;
+            height: auto;
         }
         #score {
             position: absolute;
@@ -44,7 +46,6 @@
             margin-top: 10px;
         }
 
-        /* Élément pour le message de victoire */
         #gameWin {
             position: absolute;
             top: 30%;
@@ -102,65 +103,41 @@
             box-sizing: border-box;
         }
 
-     /* Style pour le bouton de saut */
-#jumpButton {
-    position: fixed;
-    bottom: 10px; /* Ajustez cette valeur si besoin */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 50px;
-    background-color: #ff5722;
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    font-size: 16px;
-    color: white;
-    cursor: pointer;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-}
-
-
-        #jumpButton:active {
-            background-color: #e64a19;
+        /* Style pour le bouton Jump */
+        #jumpButton {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 2;
+            background-color: blue;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            display: none; /* Caché par défaut */
         }
 
-        /* Responsive Design pour les petits écrans */
-        @media (max-width: 600px) {
-            #gameCanvas {
-                width: 100%;
-                height: auto;
-            }
-            #previewCanvas {
-                width: 100px;
-                height: 60px;
-            }
-            #jumpButton {
-                width: 60px;
-                height: 40px;
-                font-size: 14px;
-                bottom: 15px;
-                right: 15px;
-            }
+        /* Media queries pour le responsive */
+        @media only screen and (max-width: 768px) {
             #score {
-                font-size: 20px;
+                font-size: 18px;
             }
-            #gameOver {
-                font-size: 36px;
-            }
-            #gameWin h1 {
-                font-size: 36px;
-            }
-            #gameWin p {
-                font-size: 20px;
+            #gameOver, #gameWin {
+                font-size: 32px;
             }
             #restartButton {
-                padding: 10px 40px;
-                font-size: 20px;
+                font-size: 18px;
+                padding: 10px 30px;
+            }
+            #jumpButton {
+                display: block; /* Afficher le bouton Jump sur les petits écrans */
+            }
+            #previewCanvas {
+                width: 150px;
+                height: 90px;
             }
         }
     </style>
@@ -178,9 +155,8 @@
     <canvas id="gameCanvas" width="1200" height="400"></canvas>
     <!-- Canvas pour la prévisualisation du prochain obstacle -->
     <canvas id="previewCanvas" width="200" height="120"></canvas>
-
-    <!-- Bouton de saut pour mobile -->
-    <button id="jumpButton" aria-label="Jump">Jump</button>
+    <!-- Bouton Jump pour les utilisateurs sur smartphone -->
+    <button id="jumpButton">Jump</button>
 
     <script>
         // Récupération des éléments du DOM
@@ -193,30 +169,29 @@
         const restartButton = document.getElementById('restartButton');
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
-        const jumpButton = document.getElementById('jumpButton');
+        const jumpButton = document.getElementById('jumpButton'); // Nouveau bouton Jump
 
         // Constantes du jeu
-        const WIDTH = canvas.width; // 1200
-        const HEIGHT = canvas.height; // 400
-        const GROUND_Y = 350; // Position du sol ajustée pour la nouvelle hauteur
-        const DINO_SIZE = 60; // Taille du dinosaure réduite
-        const COACH_SIZE = 45; // Taille du coach réduite
-        const OBSTACLE_WIDTH = 50; // Taille réduite
-        const OBSTACLE_HEIGHT = 80; // Taille réduite
-        const OBSTACLE_SPEED = 5; // Vitesse initiale réduite
-        const GRAVITY = 0.8; // Gravité ajustée (réduite de 1.0 à 0.8)
-        const JUMP_FORCE = 20; // Force de saut ajustée (augmentée de 18 à 20)
+        let WIDTH = canvas.width; // 1200
+        let HEIGHT = canvas.height; // 400
+        const GROUND_Y = 350;
+        const DINO_SIZE = 60;
+        const COACH_SIZE = 45;
+        const OBSTACLE_WIDTH = 50;
+        const OBSTACLE_HEIGHT = 80;
+        const OBSTACLE_SPEED = 5;
+        const GRAVITY = 0.8;
+        const JUMP_FORCE = 20;
 
-        // Seuil minimal pour l'espacement des obstacles
-        const MIN_OBSTACLE_TIMER_THRESHOLD = 34; // Frames (basé sur la durée du saut)
-        const BASE_OBSTACLE_TIMER_THRESHOLD = 120; // Frames
+        const MIN_OBSTACLE_TIMER_THRESHOLD = 34;
+        const BASE_OBSTACLE_TIMER_THRESHOLD = 120;
 
         // Variables du jeu
         let score = 0;
         let gameOver = false;
-        let gameWin = false; // Variable pour la victoire
-        let victoryStage = 0; // 0 : aucune victoire, 1 : victoire à 10 000 points, 2 : victoire à 15 000 points
-        let gameOverReason = ""; // Stocker le danger causant le Game Over
+        let gameWin = false;
+        let victoryStage = 0;
+        let gameOverReason = "";
         let dino = {
             x: 100,
             y: GROUND_Y - DINO_SIZE,
@@ -227,7 +202,7 @@
         };
         let coach = {
             x: dino.x + DINO_SIZE / 2 - COACH_SIZE / 2,
-            y: dino.y - COACH_SIZE - 10, // Ajusté pour la nouvelle hauteur
+            y: dino.y - COACH_SIZE - 10,
             width: COACH_SIZE,
             height: COACH_SIZE
         };
@@ -236,7 +211,7 @@
         // Liste des étiquettes IA
         const obstacleLabels = ["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité"];
 
-        // Charger les images (pour le dinosaure et le coach)
+        // Charger les images
         const dinoImg = new Image();
         dinoImg.src = 'images/dino.png';
         const coachImg = new Image();
@@ -255,15 +230,13 @@
         const obstacleImageSources = Object.values(obstacleImageMap);
 
         // Compter le nombre total d'images à charger
-        const totalImages = 2 + obstacleImageSources.length; // dino, coach + obstacles
+        const totalImages = 2 + obstacleImageSources.length;
 
         let imagesLoaded = 0;
 
         // Fonction pour démarrer le jeu après le chargement des images
         function startGame() {
-            // Créer un seul obstacle initial avec un espacement adéquat
             createObstacle();
-            // Initialiser l'aperçu si possible
             initializePreview();
             requestAnimationFrame(gameLoop);
         }
@@ -272,7 +245,6 @@
         function imageLoaded() {
             imagesLoaded++;
             if (imagesLoaded === totalImages) {
-                console.log('Toutes les images sont chargées.');
                 startGame();
             }
         }
@@ -295,11 +267,8 @@
         // Fonction pour gérer le saut du dinosaure
         function jump() {
             if (!dino.isJumping && !gameOver && !gameWin) {
-                console.log("Saut initié");
                 dino.velocityY = -JUMP_FORCE;
                 dino.isJumping = true;
-            } else {
-                console.log("Saut impossible : ", { isJumping: dino.isJumping, gameOver: gameOver, gameWin: gameWin });
             }
         }
 
@@ -319,11 +288,8 @@
             gameOverElement.style.display = 'none';
             gameWinElement.style.display = 'none';
             restartButton.style.display = 'none';
-            restartButton.textContent = 'Redémarrer';
             previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            // Créer un obstacle initial avec un espacement adéquat
             createObstacle();
-            // Initialiser l'aperçu
             initializePreview();
             requestAnimationFrame(gameLoop);
         }
@@ -332,16 +298,15 @@
         function createObstacle() {
             const label = obstacleLabels[Math.floor(Math.random() * obstacleLabels.length)];
             const obstacle = {
-                x: WIDTH + Math.random() * 300, // Variation aléatoire pour l'espacement
+                x: WIDTH + Math.random() * 300,
                 y: GROUND_Y - OBSTACLE_HEIGHT,
                 width: OBSTACLE_WIDTH,
                 height: OBSTACLE_HEIGHT,
                 label: label,
-                image: obstacleImages[label], // Assigner l'image basée sur le label
-                passed: false // Indique si l'obstacle a été passé
+                image: obstacleImages[label],
+                passed: false
             };
             obstacles.push(obstacle);
-            console.log(`Obstacle créé: ${label} à x=${obstacle.x}`);
         }
 
         // Fonction pour détecter les collisions
@@ -356,19 +321,17 @@
         function updatePreview() {
             if (obstacles.length >= 2) {
                 const nextObstacle = obstacles[1];
-                console.log(`Prévisualisation: ${nextObstacle.label}`);
-                // Effacer le canvas de prévisualisation
                 previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 
                 // Dessiner le texte "Danger IA" en plus petit
-                previewCtx.fillStyle = "#FF0000"; // Rouge pour attirer l'attention
-                previewCtx.font = "18px Arial"; // Taille plus petite pour le titre
+                previewCtx.fillStyle = "#FF0000";
+                previewCtx.font = "18px Arial";
                 previewCtx.textAlign = "center";
                 previewCtx.fillText("Danger IA", previewCanvas.width / 2, 30);
 
                 // Dessiner le libellé du danger en plus grand
-                previewCtx.fillStyle = "#000000"; // Noir
-                previewCtx.font = "22px Arial"; // Taille plus grande pour le libellé
+                previewCtx.fillStyle = "#000000";
+                previewCtx.font = "22px Arial";
                 previewCtx.textAlign = "center";
                 previewCtx.fillText(nextObstacle.label, previewCanvas.width / 2, 70);
             }
@@ -378,19 +341,17 @@
         function initializePreview() {
             if (obstacles.length >= 2) {
                 const nextObstacle = obstacles[1];
-                console.log(`Initialisation de la prévisualisation: ${nextObstacle.label}`);
-                // Effacer le canvas de prévisualisation
                 previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 
                 // Dessiner le texte "Danger IA" en plus petit
-                previewCtx.fillStyle = "#FF0000"; // Rouge pour attirer l'attention
-                previewCtx.font = "18px Arial"; // Taille plus petite pour le titre
+                previewCtx.fillStyle = "#FF0000";
+                previewCtx.font = "18px Arial";
                 previewCtx.textAlign = "center";
                 previewCtx.fillText("Danger IA", previewCanvas.width / 2, 30);
 
                 // Dessiner le libellé du danger en plus grand
-                previewCtx.fillStyle = "#000000"; // Noir
-                previewCtx.font = "22px Arial"; // Taille plus grande pour le libellé
+                previewCtx.fillStyle = "#000000";
+                previewCtx.font = "22px Arial";
                 previewCtx.textAlign = "center";
                 previewCtx.fillText(nextObstacle.label, previewCanvas.width / 2, 70);
             }
@@ -400,8 +361,7 @@
         let obstacleTimer = 0;
         function gameLoop() {
             if (gameOver || gameWin) {
-                console.log("Exiting gameLoop: gameOver =", gameOver, "gameWin =", gameWin);
-                return; // Arrêter la boucle de jeu
+                return;
             }
 
             // Effacer le canvas
@@ -409,31 +369,21 @@
 
             // Dessiner le sol
             ctx.fillStyle = "#000000";
-            ctx.fillRect(0, GROUND_Y, WIDTH, 4); // Sol légèrement plus épais
+            ctx.fillRect(0, GROUND_Y, WIDTH, 4);
 
             // Gérer le saut
             dino.velocityY += GRAVITY;
             dino.y += dino.velocityY;
 
-            // Log de la position du dinosaure
-            console.log(`Dino position Y: ${dino.y.toFixed(2)}, VelocityY: ${dino.velocityY.toFixed(2)}, isJumping: ${dino.isJumping}`);
-
             if (dino.y >= GROUND_Y - dino.height) {
                 dino.y = GROUND_Y - dino.height;
                 dino.isJumping = false;
                 dino.velocityY = 0;
-                console.log("Dino atterri");
             }
 
             // Mettre à jour la position du coach
             coach.x = dino.x + dino.width / 2 - coach.width / 2;
             coach.y = dino.y - coach.height - 10;
-
-            // Dessiner le nom "Explorateur" derrière le dino
-            ctx.fillStyle = "#000000"; // Noir
-            ctx.font = "20px Arial";
-            ctx.textAlign = "right";
-            ctx.fillText("Explorateur", dino.x - 10, dino.y + dino.height / 2 + 6); // Position ajustée
 
             // Dessiner le dinosaure
             if (dinoImg.complete) {
@@ -446,14 +396,13 @@
             }
 
             // Ajouter le texte "Coach Y.ZEBOUDJI" au-dessus du coach
-            ctx.fillStyle = "#000000"; // Noir
-            ctx.font = "16px Arial"; // Taille augmentée pour meilleure lisibilité
+            ctx.fillStyle = "#000000";
+            ctx.font = "16px Arial";
             ctx.textAlign = "center";
-            ctx.fillText("Coach Y.ZEBOUDJI", coach.x + coach.width / 2, coach.y - 10); // Position ajustée au-dessus du coach
+            ctx.fillText("Coach Y.ZEBOUDJI", coach.x + coach.width / 2, coach.y - 10);
 
             // Gérer les obstacles
             obstacleTimer++;
-            // Calculer le seuil d'obstacle avec un minimum pour éviter un espacement trop court
             const dynamicObstacleTimerThreshold = Math.max(
                 MIN_OBSTACLE_TIMER_THRESHOLD,
                 BASE_OBSTACLE_TIMER_THRESHOLD - Math.floor(score / 100)
@@ -468,7 +417,7 @@
             for (let i = 0; i < obstacles.length; i++) {
                 let obs = obstacles[i];
                 const currentSpeed = OBSTACLE_SPEED + Math.floor(score / 100) * 0.2;
-                obs.x -= currentSpeed; // Augmenter la vitesse avec le score
+                obs.x -= currentSpeed;
 
                 // Dessiner l'obstacle avec son image spécifique
                 if (obs.image.complete) {
@@ -476,27 +425,26 @@
                 }
 
                 // Dessiner l'étiquette IA sous l'obstacle
-                ctx.fillStyle = "#000000"; // Noir
-                ctx.font = "16px Arial"; // Taille augmentée pour meilleure lisibilité
+                ctx.fillStyle = "#000000";
+                ctx.font = "16px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height + 20); // Position ajustée
+                ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height + 20);
 
                 // Détecter les collisions
                 let dinoRect = {x: dino.x, y: dino.y, width: dino.width, height: dino.height};
                 let obsRect = {x: obs.x, y: obs.y, width: obs.width, height: obs.height};
                 if (detectCollision(dinoRect, obsRect)) {
                     gameOver = true;
-                    gameOverReason = obs.label; // Stocker le label de l'obstacle causant la collision
+                    gameOverReason = obs.label;
                     gameOverElement.style.display = 'block';
                     restartButton.style.display = 'block';
-                    gameOverReasonElement.textContent = gameOverReason; // Afficher le label dans le message Game Over
-                    console.log(`Collision détectée avec ${gameOverReason}`);
+                    gameOverReasonElement.textContent = gameOverReason;
                 }
 
                 // Vérifier si l'obstacle a été passé
                 if (!obs.passed && obs.x + obs.width < dino.x) {
                     obs.passed = true;
-                    updatePreview(); // Mettre à jour l'aperçu après avoir passé l'obstacle
+                    updatePreview();
                 }
 
                 // Supprimer les obstacles hors écran
@@ -509,7 +457,6 @@
             // Mettre à jour le score
             score++;
             scoreElement.textContent = `Score: ${score}`;
-            console.log(`Score updated: ${score}`);
 
             // Vérifier les conditions de victoire
             if (score >= 10000 && victoryStage === 0) {
@@ -522,8 +469,7 @@
                 gameWinElement.style.display = 'block';
                 restartButton.style.display = 'block';
                 restartButton.textContent = 'Continuer';
-                console.log("Félicitations ! Vous avez atteint 10 000 points.");
-                return; // Arrêter la boucle de jeu
+                return;
             }
 
             if (score >= 15000 && victoryStage === 1) {
@@ -536,8 +482,7 @@
                 gameWinElement.style.display = 'block';
                 restartButton.style.display = 'block';
                 restartButton.textContent = 'Redémarrer';
-                console.log("Félicitations ! Vous avez atteint 15 000 points.");
-                return; // Arrêter la boucle de jeu
+                return;
             }
 
             // Appeler la prochaine frame
@@ -551,73 +496,24 @@
             }
         });
 
-        // Gestion du bouton de saut
+        // Gestion du bouton Jump
         jumpButton.addEventListener('click', function() {
             jump();
         });
 
-        // Optionnel : Ajouter la possibilité de sauter avec un balayage vers le haut
-        let touchStartY = null;
-
-        document.addEventListener('touchstart', function(event) {
-            if (event.touches.length === 1) {
-                touchStartY = event.touches[0].clientY;
-            }
-        }, false);
-
-        document.addEventListener('touchend', function(event) {
-            if (touchStartY === null) return;
-            let touchEndY = event.changedTouches[0].clientY;
-            let deltaY = touchStartY - touchEndY;
-
-            // Détecter un balayage vers le haut si le mouvement dépasse un certain seuil
-            if (deltaY > 30) { // Seuil en pixels
-                jump();
-            }
-            touchStartY = null;
-        }, false);
-
-        // Empêcher le défilement de la page lorsque le jeu est actif
-        document.body.addEventListener('touchmove', function(event) {
-            event.preventDefault();
-        }, { passive: false });
-
-        // Redimensionner le canvas pour les écrans mobiles
-        function resizeCanvas() {
-            const aspectRatio = WIDTH / HEIGHT;
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-
-            if (windowWidth / windowHeight > aspectRatio) {
-                canvas.height = windowHeight;
-                canvas.width = windowHeight * aspectRatio;
-            } else {
-                canvas.width = windowWidth;
-                canvas.height = windowWidth / aspectRatio;
-            }
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('orientationchange', resizeCanvas);
-        resizeCanvas(); // Appel initial
-
-        // Fonction pour réactiver le jeu après une victoire ou une défaite
+        // Gestion du bouton de redémarrage
         restartButton.addEventListener('click', function() {
             if (victoryStage === 1) {
-                // Continuer le jeu après la première victoire
                 gameWinElement.style.display = 'none';
                 restartButton.style.display = 'none';
-                gameWin = false; // Réinitialiser le drapeau gameWin pour permettre la reprise
+                gameWin = false;
                 requestAnimationFrame(gameLoop);
             } else if (victoryStage === 2) {
-                // Redémarrer le jeu après la deuxième victoire
                 resetGame();
             } else if (gameOver) {
-                // Redémarrer le jeu après une collision
                 resetGame();
             }
         });
     </script>
 </body>
 </html>
-
