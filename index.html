@@ -117,7 +117,7 @@
             color: white;
             border: none;
             border-radius: 5px;
-            display: none; /* Caché par défaut */
+            display: block; /* Toujours affiché */
         }
 
         /* Media queries pour le responsive */
@@ -132,9 +132,7 @@
                 font-size: 18px;
                 padding: 10px 30px;
             }
-            #jumpButton {
-                display: block; /* Afficher le bouton Jump sur les petits écrans */
-            }
+            /* Pas besoin de modifier #jumpButton ici puisqu'il est toujours affiché */
             #previewCanvas {
                 width: 150px;
                 height: 90px;
@@ -155,7 +153,7 @@
     <canvas id="gameCanvas" width="1200" height="400"></canvas>
     <!-- Canvas pour la prévisualisation du prochain obstacle -->
     <canvas id="previewCanvas" width="200" height="120"></canvas>
-    <!-- Bouton Jump pour les utilisateurs sur smartphone -->
+    <!-- Bouton Jump pour les utilisateurs -->
     <button id="jumpButton">Jump</button>
 
     <script>
@@ -169,7 +167,7 @@
         const restartButton = document.getElementById('restartButton');
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
-        const jumpButton = document.getElementById('jumpButton'); // Nouveau bouton Jump
+        const jumpButton = document.getElementById('jumpButton'); // Bouton Jump
 
         // Constantes du jeu
         let WIDTH = canvas.width; // 1200
@@ -390,7 +388,7 @@
                 ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
             }
 
-            // **Ajouter le texte "explorateur" à gauche du dinosaure**
+            // Ajouter le texte "Aventurier" à gauche du dinosaure
             ctx.fillStyle = "#000000";
             ctx.font = "16px Arial";
             ctx.textAlign = "right";
