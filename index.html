@@ -99,6 +99,70 @@
             padding: 10px;
             box-sizing: border-box;
         }
+
+        /* Style pour le bouton de saut */
+        #jumpButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #ff5722;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+            z-index: 3; /* Au-dessus des autres éléments */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #jumpButton:active {
+            background-color: #e64a19;
+        }
+
+        /* Optionnel : Ajouter une icône de saut (flèche vers le haut) */
+        #jumpButton::before {
+            content: '↑';
+        }
+
+        /* Pour les petits écrans, ajuster la taille du canvas si nécessaire */
+        @media (max-width: 600px) {
+            #gameCanvas {
+                width: 100%;
+                height: auto;
+            }
+            #previewCanvas {
+                width: 100px;
+                height: 60px;
+            }
+            #jumpButton {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+                bottom: 15px;
+                right: 15px;
+            }
+            #score {
+                font-size: 20px;
+            }
+            #gameOver {
+                font-size: 36px;
+            }
+            #gameWin h1 {
+                font-size: 36px;
+            }
+            #gameWin p {
+                font-size: 20px;
+            }
+            #restartButton {
+                padding: 10px 40px;
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -115,6 +179,9 @@
     <!-- Canvas pour la prévisualisation du prochain obstacle -->
     <canvas id="previewCanvas" width="200" height="120"></canvas>
 
+    <!-- Bouton de saut pour mobile -->
+    <button id="jumpButton" aria-label="Sauter"></button>
+
     <script>
         // Récupération des éléments du DOM
         const canvas = document.getElementById('gameCanvas');
@@ -126,6 +193,7 @@
         const restartButton = document.getElementById('restartButton');
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
+        const jumpButton = document.getElementById('jumpButton'); // Bouton de saut
 
         // Constantes du jeu
         const WIDTH = canvas.width; // 1200
@@ -477,6 +545,39 @@
             }
         });
 
+        // Gestion du bouton de saut
+        jumpButton.addEventListener('click', function() {
+            jump();
+        });
+
+        // Optionnel : Ajouter la possibilité de sauter en touchant n'importe où sur l'écran
+        document.addEventListener('touchstart', function(event) {
+            // Empêcher le comportement par défaut (comme le défilement)
+            event.preventDefault();
+            jump();
+        }, { passive: false });
+
+        // Optionnel : Ajouter la possibilité de sauter avec un balayage vers le haut
+        let touchStartY = null;
+
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length === 1) {
+                touchStartY = event.touches[0].clientY;
+            }
+        }, false);
+
+        document.addEventListener('touchend', function(event) {
+            if (touchStartY === null) return;
+            let touchEndY = event.changedTouches[0].clientY;
+            let deltaY = touchStartY - touchEndY;
+
+            // Détecter un balayage vers le haut si le mouvement dépasse un certain seuil
+            if (deltaY > 30) { // Seuil en pixels
+                jump();
+            }
+            touchStartY = null;
+        }, false);
+
         // Gestion du bouton de redémarrage
         restartButton.addEventListener('click', function() {
             if (victoryStage === 1) {
@@ -493,6 +594,30 @@
                 resetGame();
             }
         });
+
+        // Empêcher le défilement de la page
+        document.body.addEventListener('touchmove', function(event) {
+            event.preventDefault();
+        }, { passive: false });
+
+        // Redimensionner le canvas pour les écrans mobiles
+        function resizeCanvas() {
+            const aspectRatio = WIDTH / HEIGHT;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            if (windowWidth / windowHeight > aspectRatio) {
+                canvas.height = windowHeight;
+                canvas.width = windowHeight * aspectRatio;
+            } else {
+                canvas.width = windowWidth;
+                canvas.height = windowWidth / aspectRatio;
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', resizeCanvas);
+        resizeCanvas(); // Appel initial
     </script>
 </body>
 </html>
