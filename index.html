@@ -25,23 +25,52 @@
             color: #000000;
             z-index: 1;
         }
-     #gameOver {
-    position: absolute;
-    top: 30%; /* Remonté de 40% à 30% */
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 48px;
-    color: red;
-    display: none;
-    z-index: 1;
-    text-align: center;
-}
+        #gameOver {
+            position: absolute;
+            top: 30%; /* Remonté de 40% à 30% */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: red;
+            display: none;
+            z-index: 1;
+            text-align: center;
+        }
 
         #gameOverReason {
             display: block;
             font-size: 24px; /* Taille augmentée pour le libellé du danger */
             margin-top: 10px;
         }
+
+        #gameWin {
+            position: absolute;
+            top: 30%; /* Position similaire à gameOver */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: green;
+            display: none; /* Caché initialement */
+            z-index: 2; /* Assure qu'il est au-dessus de gameOver */
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.9); /* Fond semi-transparent pour lisibilité */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #gameWin h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        #gameWin p {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #coachImage {
+            width: 150px; /* Ajustez la taille selon vos besoins */
+            height: auto;
+            border-radius: 50%; /* Rendre l'image ronde */
+        }
+
         #restartButton {
             position: absolute;
             top: 55%;
@@ -52,7 +81,10 @@
             display: none;
             cursor: pointer;
             z-index: 1;
-			background-color:Blue;
+            background-color: Blue;
+            color: white; /* Assurez-vous que le texte est lisible */
+            border: none;
+            border-radius: 5px;
         }
         /* Style pour le canvas de prévisualisation */
         #previewCanvas {
@@ -72,7 +104,12 @@
     <div id="score">Score: 0</div>
     <div id="gameOver">
         Game Over par : <br>
-         <span  id="gameOverReason"></span>
+        <span id="gameOverReason"></span>
+    </div>
+    <div id="gameWin">
+        <h1>Félicitations !</h1>
+        <p>Vous avez atteint 10 000 points et gagné 30 minutes d'acculturation avec le coach !</p>
+        <img src="images/coach.png" alt="Coach" id="coachImage">
     </div>
     <button id="restartButton">Redémarrer</button>
     <canvas id="gameCanvas" width="1200" height="400"></canvas>
@@ -86,6 +123,7 @@
         const scoreElement = document.getElementById('score');
         const gameOverElement = document.getElementById('gameOver');
         const gameOverReasonElement = document.getElementById('gameOverReason');
+        const gameWinElement = document.getElementById('gameWin'); // Nouvel élément
         const restartButton = document.getElementById('restartButton');
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
@@ -109,6 +147,7 @@
         // Variables du jeu
         let score = 0;
         let gameOver = false;
+        let gameWin = false; // Nouvelle variable pour la victoire
         let gameOverReason = ""; // Nouvelle variable pour stocker le danger causant le Game Over
         let dino = {
             x: 100,
@@ -127,7 +166,7 @@
         let obstacles = [];
 
         // Liste des étiquettes IA
-        const obstacleLabels = ["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité" , "obstacle1", "obstacle2"];
+        const obstacleLabels = ["RGPD", "Hallucination", "Erreurs", "Biais", "Sécurité"];
 
         // Charger les images (pour le dinosaure et le coach)
         const dinoImg = new Image();
@@ -142,8 +181,6 @@
             "Erreurs": 'images/erreurs.png',
             "Biais": 'images/biais.png',
             "Sécurité": 'images/securite.png'
-		   "Cactus ^^": 'images/obstacle1.png'
-	    "Cactus :-)": 'images/obstacle2.png'
         };
 
         // Récupérer les URLs des images des obstacles
@@ -189,12 +226,12 @@
 
         // Fonction pour gérer le saut du dinosaure
         function jump() {
-            if (!dino.isJumping && !gameOver) {
+            if (!dino.isJumping && !gameOver && !gameWin) { // Ajout de !gameWin
                 console.log("Saut initié");
                 dino.velocityY = -JUMP_FORCE;
                 dino.isJumping = true;
             } else {
-                console.log("Saut impossible : ", { isJumping: dino.isJumping, gameOver: gameOver });
+                console.log("Saut impossible : ", { isJumping: dino.isJumping, gameOver: gameOver, gameWin: gameWin });
             }
         }
 
@@ -202,6 +239,7 @@
         function resetGame() {
             score = 0;
             gameOver = false;
+            gameWin = false; // Réinitialiser le flag de victoire
             gameOverReason = ""; // Réinitialiser la raison du Game Over
             dino.y = GROUND_Y - DINO_SIZE;
             dino.velocityY = 0;
@@ -210,6 +248,7 @@
             coach.y = dino.y - coach.height - 10;
             obstacles = [];
             gameOverElement.style.display = 'none';
+            gameWinElement.style.display = 'none'; // Cacher le message de victoire
             restartButton.style.display = 'none';
             previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height); // Effacer l'aperçu
             // Créer un obstacle initial avec un espacement adéquat
@@ -290,7 +329,7 @@
         // Fonction principale de la boucle de jeu
         let obstacleTimer = 0;
         function gameLoop() {
-            if (gameOver) return;
+            if (gameOver || gameWin) return; // Arrêter la boucle si le jeu est terminé ou gagné
 
             // Effacer le canvas
             ctx.clearRect(0, 0, WIDTH, HEIGHT);
@@ -392,6 +431,15 @@
             score++;
             scoreElement.textContent = `Score: ${score}`;
 
+            // Vérifier la condition de victoire
+            if (score >= 10000 && !gameWin) {
+                gameWin = true;
+                gameOver = true; // Arrêter la boucle de jeu
+                gameWinElement.style.display = 'block';
+                restartButton.style.display = 'block';
+                console.log("Félicitations ! Vous avez gagné.");
+            }
+
             // Appeler la prochaine frame
             requestAnimationFrame(gameLoop);
         }
@@ -408,4 +456,3 @@
     </script>
 </body>
 </html>
-
