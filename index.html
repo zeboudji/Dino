@@ -482,7 +482,7 @@
             scoreElement.textContent = `Score: ${score}`;
 
             // Vérifier les conditions de victoire
-            if (score >= 10000 && victoryStage === 0) {
+            if (score >= 1000 && victoryStage === 0) {
                 victoryStage = 1;
                 gameWin = true;
                 gameWinElement.innerHTML = `
@@ -501,7 +501,7 @@
                 return;
             }
 
-            if (score >= 15000 && victoryStage === 1) {
+            if (score >= 1500 && victoryStage === 1) {
                 victoryStage = 2;
                 gameWin = true;
                 gameWinElement.innerHTML = `
