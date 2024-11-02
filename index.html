@@ -1,1 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu du Dinosaure IA</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 2px solid #000000;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #000000;
+            z-index: 1;
+        }
+        #gameOver {
+            position: absolute;
+            top: 30%; /* Remonté de 40% à 30% */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: red;
+            display: none;
+            z-index: 1;
+            text-align: center;
+        }
+        #gameOverReason {
+            display: block;
+            font-size: 24px; /* Taille augmentée pour le libellé du danger */
+            margin-top: 10px;
+        }
+        #restartButton {
+            position: absolute;
+            top: 45%; /* Remonté de 55% à 45% */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 60px;
+            font-size: 24px;
+            display: none;
+            cursor: pointer;
+            z-index: 1;
+            background-color: Blue;
+            color: white; /* Assurez-vous que le texte est lisible */
+            border: none;
+            border-radius: 5px;
+        }
+        /* Style pour le canvas de prévisualisation */
+        #previewCanvas {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border: 1px solid #000;
+            background-color: #fff;
+            width: 200px; /* Largeur ajustée */
+            height: 120px; /* Hauteur ajustée */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="gameOver">
+        Game Over par : <br>
+        <span id="gameOverReason"></span>
+    </div>
+    <button id="restartButton">Redémarrer</button>
+    <canvas id="gameCanvas" width="1200" height="400"></canvas>
+    <!-- Canvas pour la prévisualisation du prochain obstacle -->
+    <canvas id="previewCanvas" width="200" height="120"></canvas>
+
+    <script>
+        // [Votre code JavaScript ici]
+        // (Assurez-vous que tous les chemins vers les images sont corrects)
+    </script>
+</body>
+</html>
 
