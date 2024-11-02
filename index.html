@@ -103,21 +103,24 @@
             box-sizing: border-box;
         }
 
-        /* Style pour le bouton Jump */
-        #jumpButton {
+        /* Style pour les boutons de saut */
+        #controls {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            gap: 20px;
+        }
+        .jumpButton {
             padding: 15px 30px;
             font-size: 24px;
             cursor: pointer;
-            z-index: 2;
             background-color: blue;
             color: white;
             border: none;
             border-radius: 5px;
-            display: block; /* Toujours affiché */
         }
 
         /* Media queries pour le responsive */
@@ -136,7 +139,7 @@
                 width: 150px;
                 height: 90px;
             }
-            #jumpButton {
+            .jumpButton {
                 font-size: 18px;
                 padding: 10px 20px;
             }
@@ -156,8 +159,11 @@
     <canvas id="gameCanvas" width="1200" height="400"></canvas>
     <!-- Canvas pour la prévisualisation du prochain obstacle -->
     <canvas id="previewCanvas" width="200" height="120"></canvas>
-    <!-- Bouton Jump pour les utilisateurs -->
-    <button id="jumpButton">Jump</button>
+    <!-- Boutons de saut pour les utilisateurs -->
+    <div id="controls">
+        <button id="jumpButton" class="jumpButton">Jump</button>
+        <button id="superJumpButton" class="jumpButton">Super Jump</button>
+    </div>
 
     <script>
         // Récupération des éléments du DOM
@@ -171,6 +177,7 @@
         const previewCanvas = document.getElementById('previewCanvas');
         const previewCtx = previewCanvas.getContext('2d');
         const jumpButton = document.getElementById('jumpButton'); // Bouton Jump
+        const superJumpButton = document.getElementById('superJumpButton'); // Bouton Super Jump
 
         // Constantes du jeu
         let WIDTH = canvas.width; // 1200
@@ -182,9 +189,8 @@
         const OBSTACLE_HEIGHT = 80;
         const OBSTACLE_SPEED = 5;
         const GRAVITY = 0.8;
-        const MIN_JUMP_FORCE = 15; // Force minimale du saut
-        const MAX_JUMP_FORCE = 30; // Force maximale du saut
-        const MAX_HOLD_TIME = 1000; // Temps maximum pour atteindre le saut maximum (en ms)
+        const JUMP_FORCE = 20; // Force du saut normal
+        const SUPER_JUMP_FORCE = 30; // Force du super saut
         const MIN_OBSTACLE_TIMER_THRESHOLD = 34;
         const BASE_OBSTACLE_TIMER_THRESHOLD = 120;
         const MIN_OBSTACLE_DISTANCE = 200; // Distance minimale entre les obstacles en pixels
@@ -213,7 +219,6 @@
         let obstacles = [];
 
         // Variables pour gérer les sauts
-        let jumpStartTime = null;
         let jumpCount = 0;
         const MAX_JUMPS = 2; // Autoriser jusqu'à 2 sauts consécutifs
 
@@ -274,14 +279,11 @@
         }
 
         // Fonction pour gérer le saut du dinosaure
-        function jump() {
+        function jump(force) {
             if (jumpCount < MAX_JUMPS && !gameOver && !gameWin) {
-                const holdTime = Math.min(Date.now() - jumpStartTime, MAX_HOLD_TIME);
-                const force = MIN_JUMP_FORCE + ((MAX_JUMP_FORCE - MIN_JUMP_FORCE) * (holdTime / MAX_HOLD_TIME));
                 dino.velocityY = -force;
                 dino.isJumping = true;
                 jumpCount++;
-                jumpStartTime = null; // Réinitialiser le temps d'appui
             }
         }
 
@@ -295,6 +297,7 @@
             dino.y = GROUND_Y - DINO_SIZE;
             dino.velocityY = 0;
             dino.isJumping = false;
+            jumpCount = 0;
             coach.x = dino.x + dino.width / 2 - coach.width / 2;
             coach.y = dino.y - coach.height - 10;
             obstacles = [];
@@ -506,49 +509,19 @@
 
         // Gestion des entrées clavier
         document.addEventListener('keydown', function(event) {
-            if (event.code === 'Space' && jumpStartTime === null) {
-                jumpStartTime = Date.now();
+            if (event.code === 'Space') {
+                jump(JUMP_FORCE);
+            } else if (event.code === 'ArrowUp') {
+                jump(SUPER_JUMP_FORCE);
             }
         });
 
-        document.addEventListener('keyup', function(event) {
-            if (event.code === 'Space' && jumpStartTime !== null) {
-                jump();
-            }
+        // Gestion des boutons de saut
+        jumpButton.addEventListener('click', function() {
+            jump(JUMP_FORCE); // Saut normal
         });
-
-        // Gestion du bouton Jump pour les clics
-        let buttonPressStartTime = null;
-
-        jumpButton.addEventListener('mousedown', function() {
-            if (!dino.isJumping && !gameOver && !gameWin && buttonPressStartTime === null) {
-                buttonPressStartTime = Date.now();
-            }
-        });
-
-        jumpButton.addEventListener('mouseup', function() {
-            if (buttonPressStartTime !== null) {
-                jumpStartTime = buttonPressStartTime;
-                jump();
-                buttonPressStartTime = null;
-            }
-        });
-
-        // Gestion pour les appareils tactiles
-        jumpButton.addEventListener('touchstart', function(event) {
-            event.preventDefault();
-            if (!dino.isJumping && !gameOver && !gameWin && buttonPressStartTime === null) {
-                buttonPressStartTime = Date.now();
-            }
-        });
-
-        jumpButton.addEventListener('touchend', function(event) {
-            event.preventDefault();
-            if (buttonPressStartTime !== null) {
-                jumpStartTime = buttonPressStartTime;
-                jump();
-                buttonPressStartTime = null;
-            }
+        superJumpButton.addEventListener('click', function() {
+            jump(SUPER_JUMP_FORCE); // Super saut
         });
 
         // Gestion du bouton de redémarrage
