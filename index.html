@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <title>Jeu du Dinosaure IA</title>
     <style>
+        /* Importation de la police "Roboto" depuis Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
+            /* Ajout d'un arrière-plan dégradé */
+            background: linear-gradient(135deg, #74ABE2 0%, #5563DE 100%);
+            font-family: 'Roboto', sans-serif;
         }
         #gameCanvas {
             display: block;
@@ -25,7 +29,7 @@
             left: 50%;
             transform: translateX(-50%);
             font-size: 24px;
-            color: #000000;
+            color: #ffffff;
             z-index: 1;
         }
         #gameOver {
@@ -34,13 +38,15 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 48px;
-            color: red;
+            color: #ff4e50;
             display: none;
             z-index: 5;
             text-align: center;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             padding: 20px;
             border-radius: 10px;
+            /* Ajout d'une ombre portée */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         #gameOverReason {
@@ -55,13 +61,15 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 32px;
-            color: green;
+            color: #2ecc71;
             display: none;
             z-index: 5;
             text-align: center;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             padding: 20px;
             border-radius: 10px;
+            /* Ajout d'une ombre portée */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
         #gameWin h1 {
             font-size: 48px;
@@ -87,10 +95,16 @@
             display: none;
             cursor: pointer;
             z-index: 5;
-            background-color: Blue;
+            background-color: #3498db;
             color: white;
             border: none;
             border-radius: 5px;
+            /* Transition pour l'effet hover */
+            transition: background-color 0.3s;
+        }
+
+        #restartButton:hover {
+            background-color: #2980b9;
         }
 
         /* Style pour le canvas de prévisualisation */
@@ -120,10 +134,16 @@
             padding: 15px 30px;
             font-size: 24px;
             cursor: pointer;
-            background-color: blue;
+            background-color: #e67e22;
             color: white;
             border: none;
             border-radius: 5px;
+            /* Transition pour l'effet hover */
+            transition: background-color 0.3s;
+        }
+
+        .jumpButton:hover {
+            background-color: #d35400;
         }
 
         /* Media queries pour le responsive */
@@ -152,20 +172,20 @@
 <body>
     <div id="score">Score: 0</div>
     <div id="gameOver">
-        Game Over par : <br>
+        Oups ! Vous avez été stoppé par :<br>
         <span id="gameOverReason"></span>
     </div>
     <div id="gameWin">
         <!-- Le contenu sera mis à jour dynamiquement via JavaScript -->
     </div>
-    <button id="restartButton">Recommencer</button>
+    <button id="restartButton">Rejouer</button>
     <canvas id="gameCanvas" width="1200" height="400"></canvas>
     <!-- Canvas pour la prévisualisation du prochain obstacle -->
     <canvas id="previewCanvas" width="200" height="120"></canvas>
     <!-- Boutons de saut pour les utilisateurs -->
     <div id="controls">
-        <button id="jumpButton" class="jumpButton">Jump</button>
-        <button id="superJumpButton" class="jumpButton">Super Jump</button>
+        <button id="jumpButton" class="jumpButton">Sauter</button>
+        <button id="superJumpButton" class="jumpButton">Super Saut</button>
     </div>
 
     <script>
@@ -486,8 +506,8 @@
                 victoryStage = 1;
                 gameWin = true;
                 gameWinElement.innerHTML = `
-                    <h1>Bravo !</h1>
-                    <p>Vous avez gagné une session de sensibilisation.<br>Voulez-vous continuer ?</p>
+                    <h1>Félicitations !</h1>
+                    <p>Vous avez débloqué une session de sensibilisation.<br>Voulez-vous continuer l'aventure ?</p>
                     <button id="continueButton">Continuer</button>
                 `;
                 gameWinElement.style.display = 'block';
@@ -505,12 +525,12 @@
                 victoryStage = 2;
                 gameWin = true;
                 gameWinElement.innerHTML = `
-                    <h1>Bravo !</h1>
-                    <p>Vous avez gagné une session d'acculturation.</p>
+                    <h1>Vous êtes un champion !</h1>
+                    <p>Félicitations, vous avez terminé le jeu et gagné une session d'acculturation.</p>
                 `;
                 gameWinElement.style.display = 'block';
                 restartButton.style.display = 'block';
-                restartButton.textContent = 'Recommencer';
+                restartButton.textContent = 'Rejouer';
                 return;
             }
 
