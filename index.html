@@ -11,7 +11,7 @@
             margin: 0;
             overflow: hidden;
             /* Arrière-plan dégradé */
-            background: linear-gradient(135deg, #74ABE2 0%, #5563DE 100%);
+            background: white;
             font-family: 'Roboto', sans-serif;
         }
         #gameCanvas {
@@ -140,17 +140,20 @@
             border-radius: 15px;
             text-align: center;
             border: 2px solid;
-            border-image: linear-gradient(45deg, #ff4e50, #f9d423) 1;
+            border-image: blue;
+            max-width: 500px;
+            width: 90%;
+            box-sizing: border-box;
         }
-        #nameInputOverlay h1 {
+        #nameInputOverlay h2 {
             font-size: 36px;
             margin-bottom: 20px;
-            color: #ff4e50;
+            color: #0000FF;
         }
         #nameInputOverlay p {
             font-size: 20px;
             margin-bottom: 20px;
-            color: #333;
+            color: black;
         }
         #nameInputOverlay input[type="text"] {
             width: 100%;
@@ -173,6 +176,13 @@
         }
         #nameInputOverlay input[type="submit"]:hover {
             background-color: #d35400;
+        }
+        /* Style pour l'image du coach dans le formulaire */
+        #nameInputOverlay img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 20px;
         }
 
         /* Media queries pour le responsive */
@@ -197,10 +207,10 @@
                 padding: 10px 20px;
             }
             #nameInputOverlay form {
-                width: 80%;
+                width: 90%;
                 padding: 20px;
             }
-            #nameInputOverlay h1 {
+            #nameInputOverlay h2 {
                 font-size: 28px;
             }
             #nameInputOverlay p {
@@ -212,6 +222,10 @@
             #nameInputOverlay input[type="submit"] {
                 font-size: 20px;
             }
+            #nameInputOverlay img {
+                width: 80px;
+                height: 80px;
+            }
         }
     </style>
 </head>
@@ -219,11 +233,15 @@
     <!-- Superposition du formulaire de saisie du nom -->
     <div id="nameInputOverlay">
         <form id="nameForm">
-            <h1>Bienvenue dans le Jeu du Dinosaure IA</h1>
-            <p>Veuillez entrer votre nom pour commencer :</p>
-            <input type="text" id="playerNameInput" placeholder="Votre nom" required>
+            <!-- Ajout de l'image du coach -->
+            <img src="images/coach.png" alt="Coach Y.ZEBOUDJI">
+            <h2>Bienvenue dans le Jeu du Dinosaure IA</h2>
+            <p>Je suis Y.ZEBOUDJI, votre coach dans ce jeu ! Merci de saisir un pseudo pour commencer l'aventure.</p>
+		
+            <input type="text" id="playerNameInput" placeholder="Votre pseudo" required>
             <br>
             <input type="submit" id="startGameButton" value="Commencer le jeu">
+				<p>Prêt à éviter les dangers de l'IA ?</p>
         </form>
     </div>
 
