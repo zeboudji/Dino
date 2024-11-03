@@ -32,52 +32,37 @@
             color: #ffffff;
             z-index: 1;
         }
-        #gameOver {
+        #gameOver, #gameWin {
             position: absolute;
-            top: 30%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            color: #ff4e50;
-            display: none;
-            z-index: 5;
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            /* Ajout d'une ombre portée */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        #gameOverReason {
-            display: block;
-            font-size: 24px;
-            margin-top: 10px;
-        }
-
-        #gameWin {
-            position: absolute;
-            top: 30%;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 32px;
-            color: #2ecc71;
+            color: #ffffff;
             display: none;
             z-index: 5;
             text-align: center;
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            /* Ajout d'une ombre portée */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            /* Mise à jour du fond pour un effet moderne */
+            background: rgba(0, 0, 0, 0.6);
+            padding: 30px 40px;
+            border-radius: 15px;
+            /* Effet de verre dépoli */
+            backdrop-filter: blur(10px);
+            /* Ajout d'une bordure avec dégradé */
+            border: 2px solid;
+            border-image: linear-gradient(45deg, #ff4e50, #f9d423) 1;
+            /* Transition pour les apparitions */
+            transition: opacity 0.3s ease;
         }
-        #gameWin h1 {
+        #gameOver h1, #gameWin h1 {
             font-size: 48px;
             margin-bottom: 20px;
+            color: #ffdd59;
         }
-        #gameWin p {
+        #gameOverReason h1, #gameWin h1 {
             font-size: 24px;
-            margin-bottom: 20px;
+            margin-top: 10px;
+            color: #ffffff;
         }
         #coachImage {
             width: 150px;
@@ -85,16 +70,11 @@
             border-radius: 50%;
         }
 
-        #restartButton {
-            position: absolute;
-            top: 55%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        #restartButton, #continueButton {
+            margin-top: 20px;
             padding: 15px 60px;
             font-size: 24px;
-            display: none;
             cursor: pointer;
-            z-index: 5;
             background-color: #3498db;
             color: white;
             border: none;
@@ -103,7 +83,7 @@
             transition: background-color 0.3s;
         }
 
-        #restartButton:hover {
+        #restartButton:hover, #continueButton:hover {
             background-color: #2980b9;
         }
 
@@ -152,9 +132,10 @@
                 font-size: 18px;
             }
             #gameOver, #gameWin {
-                font-size: 32px;
+                font-size: 28px;
+                padding: 20px 30px;
             }
-            #restartButton {
+            #restartButton, #continueButton {
                 font-size: 18px;
                 padding: 10px 30px;
             }
@@ -172,13 +153,15 @@
 <body>
     <div id="score">Score: 0</div>
     <div id="gameOver">
-        Oups ! Vous avez été stoppé par :<br>
-        <span id="gameOverReason"></span>
+        <h1>Oups !</h1>
+         <span id="gameOverReason"><</span> :
+		 Vous a mis un KO !<br>
+       
+        <button id="restartButton">Rejouer</button>
     </div>
     <div id="gameWin">
         <!-- Le contenu sera mis à jour dynamiquement via JavaScript -->
     </div>
-    <button id="restartButton">Rejouer</button>
     <canvas id="gameCanvas" width="1200" height="400"></canvas>
     <!-- Canvas pour la prévisualisation du prochain obstacle -->
     <canvas id="previewCanvas" width="200" height="120"></canvas>
@@ -328,7 +311,6 @@
             obstacles = [];
             gameOverElement.style.display = 'none';
             gameWinElement.style.display = 'none';
-            restartButton.style.display = 'none';
             previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
             createObstacle();
             initializePreview();
@@ -480,7 +462,6 @@
                     gameOver = true;
                     gameOverReason = obs.label;
                     gameOverElement.style.display = 'block';
-                    restartButton.style.display = 'block';
                     gameOverReasonElement.textContent = gameOverReason;
                 }
 
@@ -527,10 +508,11 @@
                 gameWinElement.innerHTML = `
                     <h1>Vous êtes un champion !</h1>
                     <p>Félicitations, vous avez terminé le jeu et gagné une session d'acculturation.</p>
+                    <button id="restartButton">Rejouer</button>
                 `;
                 gameWinElement.style.display = 'block';
-                restartButton.style.display = 'block';
-                restartButton.textContent = 'Rejouer';
+                // Attacher l'événement au nouveau bouton 'Rejouer'
+                document.getElementById('restartButton').addEventListener('click', resetGame);
                 return;
             }
 
@@ -564,13 +546,7 @@
         });
 
         // Gestion du bouton de redémarrage
-        restartButton.addEventListener('click', function() {
-            if (victoryStage === 2 && gameWin) {
-                resetGame();
-            } else if (gameOver) {
-                resetGame();
-            }
-        });
+        restartButton.addEventListener('click', resetGame);
     </script>
 </body>
 </html>
