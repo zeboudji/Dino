@@ -10,7 +10,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            /* Ajout d'un arrière-plan dégradé */
+            /* Arrière-plan dégradé */
             background: linear-gradient(135deg, #74ABE2 0%, #5563DE 100%);
             font-family: 'Roboto', sans-serif;
         }
@@ -42,16 +42,12 @@
             display: none;
             z-index: 5;
             text-align: center;
-            /* Mise à jour du fond pour un effet moderne */
             background: rgba(0, 0, 0, 0.6);
             padding: 30px 40px;
             border-radius: 15px;
-            /* Effet de verre dépoli */
             backdrop-filter: blur(10px);
-            /* Ajout d'une bordure avec dégradé */
             border: 2px solid;
             border-image: linear-gradient(45deg, #ff4e50, #f9d423) 1;
-            /* Transition pour les apparitions */
             transition: opacity 0.3s ease;
         }
         #gameOver h1, #gameWin h1 {
@@ -70,7 +66,7 @@
             border-radius: 50%;
         }
 
-        #restartButton, #continueButton {
+        #restartButton, #continueButton, #startGameButton {
             margin-top: 20px;
             padding: 15px 60px;
             font-size: 24px;
@@ -79,11 +75,10 @@
             color: white;
             border: none;
             border-radius: 5px;
-            /* Transition pour l'effet hover */
             transition: background-color 0.3s;
         }
 
-        #restartButton:hover, #continueButton:hover {
+        #restartButton:hover, #continueButton:hover, #startGameButton:hover {
             background-color: #2980b9;
         }
 
@@ -118,11 +113,65 @@
             color: white;
             border: none;
             border-radius: 5px;
-            /* Transition pour l'effet hover */
             transition: background-color 0.3s;
         }
 
         .jumpButton:hover {
+            background-color: #d35400;
+        }
+
+        /* Style pour la superposition du formulaire de saisie du nom */
+        #nameInputOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #nameInputOverlay form {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid;
+            border-image: linear-gradient(45deg, #ff4e50, #f9d423) 1;
+        }
+        #nameInputOverlay h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #ff4e50;
+        }
+        #nameInputOverlay p {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        #nameInputOverlay input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            margin-bottom: 20px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        #nameInputOverlay input[type="submit"] {
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #nameInputOverlay input[type="submit"]:hover {
             background-color: #d35400;
         }
 
@@ -135,7 +184,7 @@
                 font-size: 28px;
                 padding: 20px 30px;
             }
-            #restartButton, #continueButton {
+            #restartButton, #continueButton, #startGameButton {
                 font-size: 18px;
                 padding: 10px 30px;
             }
@@ -147,10 +196,37 @@
                 font-size: 18px;
                 padding: 10px 20px;
             }
+            #nameInputOverlay form {
+                width: 80%;
+                padding: 20px;
+            }
+            #nameInputOverlay h1 {
+                font-size: 28px;
+            }
+            #nameInputOverlay p {
+                font-size: 16px;
+            }
+            #nameInputOverlay input[type="text"] {
+                font-size: 16px;
+            }
+            #nameInputOverlay input[type="submit"] {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Superposition du formulaire de saisie du nom -->
+    <div id="nameInputOverlay">
+        <form id="nameForm">
+            <h1>Bienvenue dans le Jeu du Dinosaure IA</h1>
+            <p>Veuillez entrer votre nom pour commencer :</p>
+            <input type="text" id="playerNameInput" placeholder="Votre nom" required>
+            <br>
+            <input type="submit" id="startGameButton" value="Commencer le jeu">
+        </form>
+    </div>
+
     <div id="score">Score: 0</div>
     <div id="gameOver">
         <h1>Oups !</h1>
@@ -182,6 +258,14 @@
         const previewCtx = previewCanvas.getContext('2d');
         const jumpButton = document.getElementById('jumpButton'); // Bouton Jump
         const superJumpButton = document.getElementById('superJumpButton'); // Bouton Super Jump
+
+        // Éléments pour la saisie du nom
+        const nameInputOverlay = document.getElementById('nameInputOverlay');
+        const nameForm = document.getElementById('nameForm');
+        const playerNameInput = document.getElementById('playerNameInput');
+
+        // Variable pour le nom du joueur
+        let playerName = "Aventurier";
 
         // Constantes du jeu
         let WIDTH = canvas.width; // 1200
@@ -265,7 +349,7 @@
         function imageLoaded() {
             imagesLoaded++;
             if (imagesLoaded === totalImages) {
-                startGame();
+                // Les images sont chargées, attendre que le nom soit saisi
             }
         }
 
@@ -283,6 +367,17 @@
                 console.error(`Erreur de chargement de l'image: ${src}`);
             };
         }
+
+        // Gestion du formulaire de saisie du nom
+        nameForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            playerName = playerNameInput.value.trim();
+            if (playerName === "") {
+                playerName = "Aventurier";
+            }
+            nameInputOverlay.style.display = 'none';
+            startGame();
+        });
 
         // Fonction pour gérer le saut du dinosaure
         function jump(force) {
@@ -405,11 +500,11 @@
                 ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
             }
 
-            // Ajouter le texte "Aventurier" à gauche du dinosaure
+            // Ajouter le texte du nom du joueur à gauche du dinosaure
             ctx.fillStyle = "#000000";
             ctx.font = "16px Arial";
             ctx.textAlign = "right";
-            ctx.fillText("Aventurier", dino.x - 10, dino.y + dino.height / 2);
+            ctx.fillText(playerName, dino.x - 10, dino.y + dino.height / 2);
 
             // Dessiner le coach volant
             if (coachImg.complete) {
@@ -486,7 +581,7 @@
                 victoryStage = 1;
                 gameWin = true;
                 gameWinElement.innerHTML = `
-                    <h1>Félicitations !</h1>
+                    <h1>Félicitations, ${playerName} !</h1>
                     <p>Vous avez débloqué une session de sensibilisation.<br>Voulez-vous continuer l'aventure ?</p>
                     <button id="continueButton">Continuer</button>
                 `;
@@ -505,7 +600,7 @@
                 victoryStage = 2;
                 gameWin = true;
                 gameWinElement.innerHTML = `
-                    <h1>Vous êtes un champion !</h1>
+                    <h1>Vous êtes un champion, ${playerName} !</h1>
                     <p>Félicitations, vous avez terminé le jeu et gagné une session d'acculturation.</p>
                     <button id="restartButton">Rejouer</button>
                 `;
@@ -528,9 +623,8 @@
             } else if (event.code === 'KeyP') {
                 isPaused = !isPaused;
                 if (isPaused) {
-                    document.getElementById('pauseOverlay').style.display = 'flex';
+                    // Vous pouvez ajouter un overlay de pause ici si vous le souhaitez
                 } else {
-                    document.getElementById('pauseOverlay').style.display = 'none';
                     requestAnimationFrame(gameLoop);
                 }
             }
