@@ -507,8 +507,8 @@
                 : `Mon score actuel dans le Jeu du Dinosaure IA !`;
 
             const body = isFinal
-                ? `Hello ! J'ai obtenu un score de ${score} points ! Je souhaite participer à une session de sensibilisation.`
-                : `Je suis en train de jouer au Jeu du Dinosaure IA et mon score actuel est de ${score} points ! Pouvez-vous faire mieux ?`;
+                ? `Bonjour ! J'ai obtenu un score de ${score} points ! Je souhaite participer à une session de sensibilisation.`
+                : `Bonjour ! J'ai obtenu un score de ${score} points ! Je souhaite participer à une session de sensibilisation.`;
 
             const mailtoLink = `mailto:youssouf.zeboudji@insidegroup.fr?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
@@ -673,7 +673,7 @@
             // Ajouter le bouton de partage sur l'écran de fin
             const shareButtonFinal = document.createElement('button');
             shareButtonFinal.id = 'shareButtonFinal';
-            shareButtonFinal.textContent = 'Partager mon score';
+            shareButtonFinal.textContent = 'Demander ma sensibilisation';
             shareButtonFinal.addEventListener('click', () => {
                 shareScore(true);
             });
@@ -688,7 +688,7 @@
             // Ajouter le bouton de partage sur l'écran de victoire
             const shareButtonFinal = document.createElement('button');
             shareButtonFinal.id = 'shareButtonFinal';
-            shareButtonFinal.textContent = 'Partager mon score';
+            shareButtonFinal.textContent = 'Demander ma sensibilisation';
             shareButtonFinal.addEventListener('click', () => {
                 shareScore(true);
             });
