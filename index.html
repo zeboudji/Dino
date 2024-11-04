@@ -228,7 +228,7 @@
         }
 
         /* Styles pour le bouton de partage */
-        #shareButtonFinal {
+        .shareButtonFinal {
             margin-top: 20px;
             padding: 15px 30px;
             font-size: 24px;
@@ -240,7 +240,7 @@
             transition: background-color 0.3s;
         }
 
-        #shareButtonFinal:hover {
+        .shareButtonFinal:hover {
             background-color: #d35400;
         }
     </style>
@@ -442,6 +442,7 @@
             previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
             createObstacle();
             initializePreview();
+            removeShareButtons(); // Supprimer les boutons de partage existants
             requestAnimationFrame(gameLoop);
         }
 
@@ -503,8 +504,8 @@
         // Fonction pour partager le score par email
         function shareScore(isFinal = false) {
             const subject = isFinal
-                ? `Mon score final dans le Jeu du Dinosaure IA !`
-                : `Mon score actuel dans le Jeu du Dinosaure IA !`;
+                ? "Mon score final dans le Jeu du Dinosaure IA !"
+                : "Mon score actuel dans le Jeu du Dinosaure IA !";
 
             const body = isFinal
                 ? `Bonjour ! J'ai obtenu un score de ${score} points ! Je souhaite participer à une session de sensibilisation.`
@@ -641,6 +642,7 @@
                 document.getElementById('continueButton').addEventListener('click', function() {
                     gameWinElement.style.display = 'none';
                     gameWin = false;
+                    removeShareButtons(); // Assurer qu'aucun bouton de partage n'est en double
                     requestAnimationFrame(gameLoop);
                 });
                 return;
@@ -670,14 +672,18 @@
             gameOverElement.style.display = 'block';
             gameOverReasonElement.textContent = gameOverReason;
 
-            // Ajouter le bouton de partage sur l'écran de fin
-            const shareButtonFinal = document.createElement('button');
-            shareButtonFinal.id = 'shareButtonFinal';
-            shareButtonFinal.textContent = 'Demander ma sensibilisation';
-            shareButtonFinal.addEventListener('click', () => {
-                shareScore(true);
-            });
-            gameOverElement.appendChild(shareButtonFinal);
+            // Vérifier si le bouton de partage existe déjà
+            if (!document.getElementById('shareButtonGameOver')) {
+                // Ajouter le bouton de partage sur l'écran de fin
+                const shareButtonGameOver = document.createElement('button');
+                shareButtonGameOver.className = 'shareButtonFinal';
+                shareButtonGameOver.id = 'shareButtonGameOver';
+                shareButtonGameOver.textContent = 'Demander ma sensibilisation';
+                shareButtonGameOver.addEventListener('click', () => {
+                    shareScore(true);
+                });
+                gameOverElement.appendChild(shareButtonGameOver);
+            }
         }
 
         // Fonction pour afficher l'écran de victoire
@@ -685,14 +691,30 @@
             gameWinElement.innerHTML = message;
             gameWinElement.style.display = 'block';
 
-            // Ajouter le bouton de partage sur l'écran de victoire
-            const shareButtonFinal = document.createElement('button');
-            shareButtonFinal.id = 'shareButtonFinal';
-            shareButtonFinal.textContent = 'Demander ma sensibilisation';
-            shareButtonFinal.addEventListener('click', () => {
-                shareScore(true);
-            });
-            gameWinElement.appendChild(shareButtonFinal);
+            // Vérifier si le bouton de partage existe déjà
+            if (!document.getElementById('shareButtonGameWin')) {
+                // Ajouter le bouton de partage sur l'écran de victoire
+                const shareButtonGameWin = document.createElement('button');
+                shareButtonGameWin.className = 'shareButtonFinal';
+                shareButtonGameWin.id = 'shareButtonGameWin';
+                shareButtonGameWin.textContent = 'Demander ma sensibilisation';
+                shareButtonGameWin.addEventListener('click', () => {
+                    shareScore(true);
+                });
+                gameWinElement.appendChild(shareButtonGameWin);
+            }
+        }
+
+        // Fonction pour supprimer les boutons de partage existants
+        function removeShareButtons() {
+            const shareButtonGameOver = document.getElementById('shareButtonGameOver');
+            if (shareButtonGameOver) {
+                shareButtonGameOver.remove();
+            }
+            const shareButtonGameWin = document.getElementById('shareButtonGameWin');
+            if (shareButtonGameWin) {
+                shareButtonGameWin.remove();
+            }
         }
 
         // Gestion des entrées clavier
